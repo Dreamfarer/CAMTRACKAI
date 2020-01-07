@@ -10,10 +10,6 @@ You will need the following libraries to compile this code:
 * [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) - For controlling the dynamxiel motors
 * [fltk 1.3.5](https://www.fltk.org/software.php) - For the GUI
 
-```
-Give examples
-```
-
 ### Installing
 
 A step by step series of examples that tell you how to get a development env running
