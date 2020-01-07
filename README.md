@@ -4,7 +4,11 @@ One Paragraph of project description goes here
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+You will need the following libraries to compile this code:
+
+* OpenCV - For the tracking algorithm
+* Dynamixel SDK - For controlling the dynamxiel motors
+* fltk 1.3.5 - For the GUI
 
 ```
 Give examples
