@@ -6,7 +6,7 @@ This is our project work for school. It is a device that rotates a camera in x a
 
 You will need these following utilities/devices:
 
-* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/)x2 - These are the motors we used. But you can use any Robots Dynamixel motor. They are used to turn the camera.
+* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robots Dynamixel motor. They are used to turn the camera.
 * [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the motors.
 
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
@@ -96,7 +96,7 @@ dxl_x64_cpp
 ## Authors
 
 * **BE3dARt (Gianluca Imbiscuso)** - *Coding/Setup* - [BE3dARt.ch](https://be3dart.ch/)
-* **Kay O.** - *Planning and building of tower*
+* **Kay** - *Planning and building of tower*
 
 ## License
 
