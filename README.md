@@ -2,7 +2,7 @@
 
 This project is a work we have to do for school.
 
-### Prerequisites
+## Prerequisites
 
 You will need these following utilities/devices:
 
@@ -19,7 +19,7 @@ You will need the following libraries to compile this code:
 * [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) - For controlling the dynamxiel motors
 * [fltk 1.3.5](https://www.fltk.org/software.php) - For the GUI
 
-### Installing
+## Installing
 
 Open the makefile and find this line.
 
