@@ -12,18 +12,16 @@ You will need the following libraries to compile this code:
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-Say what the step will be
+Open the makefile and find this line.
 
 ```
-Give the example
+-L/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries/fltk
 ```
 
-And repeat
+Change it to your location.
 
 ```
-until finished
+-L/home/USERNAME/YOURPATH/CamTrackAI/Libraries/fltk
 ```
 
 End with an example of getting some data out of the system or using it for a little demo
