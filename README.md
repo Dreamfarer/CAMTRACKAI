@@ -4,6 +4,15 @@ This project is a work we have to do for school.
 
 ### Prerequisites
 
+You will need these following utilities/devices:
+
+* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/)x2 - These are the motors we used. But you can use any Robots Dynamixel motor. They are used to turn the camera.
+* [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the motors.
+
+* [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
+* [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used. But you can use any computer with any Linux distro.
+
+
 You will need the following libraries to compile this code:
 
 * [OpenCV](https://opencv.org/releases/) - For the tracking algorithm
@@ -23,6 +32,14 @@ Change it to your location.
 ```
 -L/home/USERNAME/YOURPATH/CamTrackAI/Libraries/fltk
 ```
+
+Navigate to CamTrackAI.cpp and find this line.
+
+```
+#define DXL_ID 4
+```
+
+Change the ID of the motors to match yours. Look it up how to change IDs of motors on the internet if you encounter problems.
 
 ## Compile and Run
 
