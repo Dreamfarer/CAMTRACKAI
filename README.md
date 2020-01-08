@@ -24,31 +24,19 @@ Change it to your location.
 -L/home/USERNAME/YOURPATH/CamTrackAI/Libraries/fltk
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+## Compile and Run
 
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
+Open the console and move to the makefile's location. First:
 
 ```
-Give an example
+make
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
+Then run the application with:
 
 ```
-Give an example
+./CamTrackAI
 ```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
 
 ## Built With
 
