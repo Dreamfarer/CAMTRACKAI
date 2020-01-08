@@ -1,6 +1,6 @@
 # CamTrackAI
 
-One Paragraph of project description goes here
+This project is a work we have to do for school.
 
 ### Prerequisites
 
@@ -54,16 +54,10 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **BE3dARt** - *Gianluca Imbiscuso* - [BE3dARt.ch](https://be3dart.ch/)
+* **BE3dARt (Gianluca Imbiscuso)** - *Coding/Setup* - [BE3dARt.ch](https://be3dart.ch/)
 
 See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
