@@ -1,6 +1,6 @@
 # CamTrackAI
 
-This project is a work we have to do for school.
+This is our project work for school. It is a device that rotates a camera in x and y direction according to object tracker data by OpenCV.
 
 ## Prerequisites
 
@@ -27,8 +27,6 @@ sudo apt-get install libopencv-dev
 ```
 
 ## Installing
-
-
 
 Open the makefile and find this line.
 
@@ -66,6 +64,33 @@ Then run the application with:
 
 ```
 ./CamTrackAI
+```
+
+## Know Issues
+This project is optimised for the Raspberry PI which runs a ARM 32 bit processor. If you have another architecture, follow the provided steps:
+
+Object files used by the application are needed in the appropriate format. Go to the makefile and search for:
+
+```
+Objx32Arm
+```
+
+You have to chose the object file that suits your architecture. In the folder 'objects' you will find a bunch. If you have a x64 system, change the makefile to:
+
+```
+Objx64
+```
+
+Next we need to load the appropriate Dynamixel library. In the makefile, search for:
+
+```
+dxl_x64_cpp
+```
+
+and change it to the appropriate library found in 'CamTrackAI/DynamixelSDK/c++/build/linux64'. If you have a x64 system, change the makefile to:
+
+```
+dxl_x64_cpp
 ```
 
 ## Authors
