@@ -23,10 +23,9 @@
 #---------------------------------------------------------------------
 
 # *** ENTER THE TARGET NAME HERE ***
-TARGET      = TrackAIr
+TARGET      = CamTrackAI
 
 # important directories used by assorted rules and other variables
-DIR_DXL    = ../../../..
 DIR_OBJS   = .objects
 
 # compiler options
@@ -41,14 +40,21 @@ FORMAT      = -m64
 #---------------------------------------------------------------------
 # Core components (all of these are likely going to be needed)
 #---------------------------------------------------------------------
-INCLUDES   += -I$(DIR_DXL)/include/dynamixel_sdk -I/usr/include/opencv4
+INCLUDES   += -I/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/DynamixelSDK/c++/include/dynamixel_sdk -I/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/fltk -I/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/opencv -I/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries
+
+LIBRARIES  += -L/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries/fltk
+LIBRARIES  += -L/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries/opencv
+
 LIBRARIES  += -ldxl_x64_cpp
 LIBRARIES  += -lrt
+
+LIBRARIES  += -lpthread -lfltk -lX11 -lXfixes -lXext -ldl -lXrender -lXcursor -lfontconfig -lXft -lXinerama -lopencv_gapi -lopencv_stitching -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_dnn_objdetect -lopencv_dnn_superres -lopencv_dpm -lopencv_highgui -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hfs -lopencv_img_hash -lopencv_line_descriptor -lopencv_quality -lopencv_reg -lopencv_rgbd -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_superres -lopencv_optflow -lopencv_surface_matching -lopencv_tracking -lopencv_datasets -lopencv_text -lopencv_dnn -lopencv_plot -lopencv_videostab -lopencv_video -lopencv_videoio -lopencv_xfeatures2d -lopencv_shape -lopencv_ml -lopencv_ximgproc -lopencv_xobjdetect -lopencv_objdetect -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_flann -lopencv_xphoto -lopencv_photo -lopencv_imgproc -lopencv_core
+
 
 #---------------------------------------------------------------------
 # Files
 #---------------------------------------------------------------------
-SOURCES = read_write.cpp \
+SOURCES = linux64/CamTrackAI.cpp \
     # *** OTHER SOURCES GO HERE ***
 
 OBJECTS  = $(addsuffix .o,$(addprefix $(DIR_OBJS)/,$(basename $(notdir $(SOURCES)))))
@@ -69,10 +75,10 @@ clean:
 make_directory:
 	mkdir -p $(DIR_OBJS)/
 
-$(DIR_OBJS)/%.o: ../%.c
+$(DIR_OBJS)/%.o: %.c
 	$(CC) $(CCFLAGS) -c $? -o $@
 
-$(DIR_OBJS)/%.o: ../%.cpp
+$(DIR_OBJS)/%.o: %.cpp
 	$(CX) $(CXFLAGS) -c $? -o $@
 
 #---------------------------------------------------------------------

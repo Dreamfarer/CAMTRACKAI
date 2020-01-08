@@ -46,10 +46,10 @@ clean:
 make_directory:
 	mkdir -p $(DIR_OBJS)/
 
-$(DIR_OBJS)/%.o: ../%.c
+$(DIR_OBJS)/%.o: %.c
 	$(CC) $(CCFLAGS) -c $? -o $@
 
-$(DIR_OBJS)/%.o: ../%.cpp
+$(DIR_OBJS)/%.o: %.cpp
 	$(CX) $(CXFLAGS) -c $? -o $@
 
 #---------------------------------------------------------------------

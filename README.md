@@ -28,6 +28,8 @@ sudo apt-get install libopencv-dev
 
 ## Installing
 
+Goto
+
 Open the makefile and find this line.
 
 ```
@@ -66,6 +68,13 @@ Then run the application with:
 ./CamTrackAI
 ```
 
+To completely remove OpenCV type into commandline:
+
+```
+find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
+```
+
+
 ## Know Issues
 This project is optimised for the Raspberry PI which runs a ARM 32 bit processor. If you have another architecture, follow the provided steps:
 
@@ -84,13 +93,21 @@ Objx64
 Next we need to load the appropriate Dynamixel library. In the makefile, search for:
 
 ```
+dxl_sbc_cpp
+```
+
+and change it to the appropriate library found in 'CamTrackAI/DynamixelSDK/c++/build'. If you have a x64 system, change the makefile to:
+
+```
 dxl_x64_cpp
 ```
 
-and change it to the appropriate library found in 'CamTrackAI/DynamixelSDK/c++/build/linux64'. If you have a x64 system, change the makefile to:
+Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
 
 ```
-dxl_x64_cpp
+cd FROM_WHERE_YOU_ARE_TO/CamTrackAI/DynamixelSDK/c++/build/linux_sbc
+make
+sudo make install
 ```
 
 ## Authors
