@@ -12,14 +12,23 @@ You will need these following utilities/devices:
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
 * [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used. But you can use any computer with any Linux distro.
 
-
 You will need the following libraries to compile this code:
 
 * [OpenCV](https://opencv.org/releases/) - For the tracking algorithm
 * [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) - For controlling the dynamxiel motors
 * [fltk 1.3.5](https://www.fltk.org/software.php) - For the GUI
 
+Because OpenCV is a big and complex framework, you will need to install it on your own machine until I find a solution for this. You can find the tutorial [here](https://linuxize.com/post/how-to-install-opencv-on-ubuntu-18-04/). You have to chose the second presented way to install it.
+
+After you finished the setup, type a final command into the console.
+
+```
+sudo apt-get install libopencv-dev
+```
+
 ## Installing
+
+
 
 Open the makefile and find this line.
 
