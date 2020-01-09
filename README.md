@@ -105,7 +105,7 @@ find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 
 ## Authors
 
-* **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/Setup* - [BE3dARt.ch](https://be3dart.ch/)
+* **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/GitHub* - [BE3dARt.ch](https://be3dart.ch/)
 * **Kay** - *Project Planning/Planning and building of tower*
 * **Luca** - *Project Planning/Helping Hand*
 
