@@ -6,7 +6,7 @@ This is our project work for school. It is a device that rotates a camera in x a
 
 You will need these following utilities/devices:
 
-* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robots Dynamixel motor. They are used to turn the camera.
+* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robotis Dynamixel motor. They are used to turn the camera.
 * [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the motors.
 
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
@@ -39,7 +39,7 @@ We need to load the appropriate Dynamixel library. In the makefile, search for:
 dxl_sbc_cpp
 ```
 
-and change it to the appropriate library found in '/YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/c++/build'. If you have a x64 system, change the makefile to:
+and change it to the appropriate library found in '/YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build'. If you have a x64 system, change the makefile to:
 
 ```
 dxl_x64_cpp
@@ -48,7 +48,7 @@ dxl_x64_cpp
 Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
 
 ```
-cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/c++/build/linux_sbc
+cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux_sbc
 make
 sudo make install
 ```
@@ -105,8 +105,9 @@ find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 
 ## Authors
 
-* **BE3dARt (Gianluca Imbiscuso)** - *Coding/Setup* - [BE3dARt.ch](https://be3dart.ch/)
-* **Kay** - *Planning and building of tower*
+* **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/Setup* - [BE3dARt.ch](https://be3dart.ch/)
+* **Kay** - *Project Planning/Planning and building of tower*
+* **Luca** - *Project Planning/Helping Hand*
 
 ## License
 
