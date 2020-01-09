@@ -21,7 +21,7 @@ FORMAT      = -m64
 #---------------------------------------------------------------------
 INCLUDES   += -I/usr/include/opencv4
 INCLUDES   += -I$(CAMTRACKAI_PATH)/fltk
-INCLUDES   += -I$(CAMTRACKAI_PATH)/DynamixelSDK/c++/include/dynamixel_sdk
+INCLUDES   += -I$(CAMTRACKAI_PATH)/DynamixelSDK/include/dynamixel_sdk
 
 #---------------------------------------------------------------------
 # LIBRARY PATH - Tell the compiler where to find libraries

@@ -14,9 +14,9 @@ You will need these following utilities/devices:
 
 You will need the following libraries to compile this code:
 
-* [OpenCV](https://opencv.org/releases/) - For the tracking algorithm
-* [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) - For controlling the dynamxiel motors
-* [fltk 1.3.5](https://www.fltk.org/software.php) - For the GUI
+* [OpenCV](https://opencv.org/releases/) (Not included, installing instructions further down) - For the tracking algorithm
+* [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) (Necessary parts included) - For controlling the dynamxiel motors
+* [fltk 1.3.5](https://www.fltk.org/software.php) (Necessary parts included) - For the GUI
 
 
 ## Installing
