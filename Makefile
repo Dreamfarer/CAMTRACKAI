@@ -4,6 +4,9 @@ TARGET      = CamTrackAI
 # important directories used by assorted rules and other variables
 DIR_OBJS   = objects
 
+# Path to CamTrackAI folder
+CAMTRACKAI_PATH = /home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI
+
 # compiler options
 CC          = gcc
 CX          = g++
@@ -14,13 +17,29 @@ LNKFLAGS    = $(CXFLAGS) #-Wl,-rpath,$(DIR_THOR)/lib
 FORMAT      = -m64
 
 #---------------------------------------------------------------------
-# Core components (all of these are likely going to be needed)
+# INCLUDE PATH - Tell the compiler where to find header (.hpp / .h) files
 #---------------------------------------------------------------------
-INCLUDES   += -I/DynamixelSDK/c++/include/dynamixel_sdk -I/fltk -I/opencv -I/Libraries
-LIBRARIES  += -L/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries/fltk
-LIBRARIES  += -L/Libraries/opencv
+INCLUDES   += -I/usr/include/opencv4
+INCLUDES   += -I$(CAMTRACKAI_PATH)/fltk
+INCLUDES   += -I$(CAMTRACKAI_PATH)/DynamixelSDK/c++/include/dynamixel_sdk
 
-LIBRARIES  += -ldxl_x64_cpp -lrt -lpthread -lfltk -lX11 -lXfixes -lXext -ldl -lXrender -lXcursor -lfontconfig -lXft -lXinerama -lopencv_gapi -lopencv_stitching -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_dnn_objdetect -lopencv_dnn_superres -lopencv_dpm -lopencv_highgui -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hfs -lopencv_img_hash -lopencv_line_descriptor -lopencv_quality -lopencv_reg -lopencv_rgbd -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_superres -lopencv_optflow -lopencv_surface_matching -lopencv_tracking -lopencv_datasets -lopencv_text -lopencv_dnn -lopencv_plot -lopencv_videostab -lopencv_video -lopencv_videoio -lopencv_xfeatures2d -lopencv_shape -lopencv_ml -lopencv_ximgproc -lopencv_xobjdetect -lopencv_objdetect -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_flann -lopencv_xphoto -lopencv_photo -lopencv_imgproc -lopencv_core
+#---------------------------------------------------------------------
+# LIBRARY PATH - Tell the compiler where to find libraries
+#---------------------------------------------------------------------
+#fltk Libray
+LIBRARIES  += -L$(CAMTRACKAI_PATH)/Libraries/fltk
+LIBRARIES  += -lfltk
+
+#OpenCV Library
+LIBRARIES  += -lopencv_gapi -lopencv_stitching -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_dnn_objdetect -lopencv_dnn_superres -lopencv_dpm -lopencv_highgui -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hfs -lopencv_img_hash -lopencv_line_descriptor -lopencv_quality -lopencv_reg -lopencv_rgbd -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_superres -lopencv_optflow -lopencv_surface_matching -lopencv_tracking -lopencv_datasets -lopencv_text -lopencv_dnn -lopencv_plot -lopencv_videostab -lopencv_video -lopencv_videoio -lopencv_xfeatures2d -lopencv_shape -lopencv_ml -lopencv_ximgproc -lopencv_xobjdetect -lopencv_objdetect -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_flann -lopencv_xphoto -lopencv_photo -lopencv_imgproc -lopencv_core
+
+#Dynamixel
+LIBRARIES  += -ldxl_x64_cpp
+#dxl_sbc_cpp
+#dxl_x64_cpp
+
+#Other
+LIBRARIES  += -lrt -lpthread -lX11 -lXfixes -lXext -ldl -lXrender -lXcursor -lfontconfig -lXft -lXinerama
 
 #---------------------------------------------------------------------
 # Files
@@ -51,7 +70,3 @@ $(DIR_OBJS)/%.o: %.c
 
 $(DIR_OBJS)/%.o: %.cpp
 	$(CX) $(CXFLAGS) -c $? -o $@
-
-#---------------------------------------------------------------------
-# End of Makefile
-#---------------------------------------------------------------------

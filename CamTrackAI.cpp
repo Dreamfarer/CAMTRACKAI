@@ -29,12 +29,13 @@
 //Include libraries
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "dynamixel_sdk.h"
-#include <highgui.hpp>
-#include <opencv.hpp>
-#include <tracking/tracker.hpp>
-#include <core/core.hpp>
-#include <imgproc.hpp>
-#include <imgcodecs.hpp>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/tracking/tracker.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining namespaces
