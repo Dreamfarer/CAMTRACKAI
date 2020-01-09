@@ -18,15 +18,18 @@ You will need the following libraries to compile this code:
 * [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) - For controlling the dynamxiel motors
 * [fltk 1.3.5](https://www.fltk.org/software.php) - For the GUI
 
-Because OpenCV is a big and complex framework, you will need to install it on your own machine until I find a solution for this. You can find the tutorial [here](https://linuxize.com/post/how-to-install-opencv-on-ubuntu-18-04/). You have to chose the second presented way to install it.
+
+## Installing
+
+### OpenCV installation
+
+Follow the tutorial found [here](https://linuxize.com/post/how-to-install-opencv-on-ubuntu-18-04/). There are two ways presented to install OpenCV. Choose the second way further down.
 
 After you finished the setup, type a final command into the console.
 
 ```
 sudo apt-get install libopencv-dev
 ```
-
-## Installing
 
 ### Dynamixel SDK installation
 
@@ -92,26 +95,12 @@ Then run the application with:
 ./CamTrackAI
 ```
 
+## Further information
+
 To completely remove OpenCV type into commandline:
 
 ```
 find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
-```
-
-
-## Know Issues
-This project is optimised for the Raspberry PI which runs a ARM 32 bit processor. If you have another architecture, follow the provided steps:
-
-Object files used by the application are needed in the appropriate format. Go to the makefile and search for:
-
-```
-Objx32Arm
-```
-
-You have to chose the object file that suits your architecture. In the folder 'objects' you will find a bunch. If you have a x64 system, change the makefile to:
-
-```
-Objx64
 ```
 
 ## Authors

@@ -27,7 +27,7 @@ INCLUDES   += -I$(CAMTRACKAI_PATH)/DynamixelSDK/c++/include/dynamixel_sdk
 # LIBRARY PATH - Tell the compiler where to find libraries
 #---------------------------------------------------------------------
 #fltk Libray
-LIBRARIES  += -L$(CAMTRACKAI_PATH)/Libraries/fltk
+LIBRARIES  += -L$(CAMTRACKAI_PATH)/fltk/lib
 LIBRARIES  += -lfltk
 
 #OpenCV Library
