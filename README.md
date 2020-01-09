@@ -28,21 +28,45 @@ sudo apt-get install libopencv-dev
 
 ## Installing
 
-Goto
+### Dynamixel SDK installation
 
-Open the makefile and find this line.
+We need to load the appropriate Dynamixel library. In the makefile, search for:
 
 ```
--L/home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI/Libraries/fltk
+dxl_sbc_cpp
+```
+
+and change it to the appropriate library found in '/YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/c++/build'. If you have a x64 system, change the makefile to:
+
+```
+dxl_x64_cpp
+```
+
+Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
+
+```
+cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/c++/build/linux_sbc
+make
+sudo make install
+```
+
+### Change path
+
+Open the makefile and find this variable:
+
+```
+CAMTRACKAI_PATH = /home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI
 ```
 
 Change it to your location.
 
 ```
--L/home/USERNAME/YOURPATH/CamTrackAI/Libraries/fltk
+CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
 ```
 
-Now navigate to CamTrackAI.cpp and find this line.
+### Change motor ID
+
+Navigate to CamTrackAI.cpp and find this line.
 
 ```
 #define DXL_ID 4
@@ -88,26 +112,6 @@ You have to chose the object file that suits your architecture. In the folder 'o
 
 ```
 Objx64
-```
-
-Next we need to load the appropriate Dynamixel library. In the makefile, search for:
-
-```
-dxl_sbc_cpp
-```
-
-and change it to the appropriate library found in 'CamTrackAI/DynamixelSDK/c++/build'. If you have a x64 system, change the makefile to:
-
-```
-dxl_x64_cpp
-```
-
-Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
-
-```
-cd FROM_WHERE_YOU_ARE_TO/CamTrackAI/DynamixelSDK/c++/build/linux_sbc
-make
-sudo make install
 ```
 
 ## Authors
