@@ -25,9 +25,6 @@
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/fl_ask.H>
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//Include libraries
-////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "dynamixel_sdk.h"
 
 #include <opencv2/opencv.hpp>
@@ -45,12 +42,11 @@ using namespace cv;
 using namespace std::chrono;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Define colors for GUI
+//Define colors for HUD OpenCV
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-Scalar Green = Scalar(179, 239, 194); //Green
-Scalar Blue = Scalar(177, 171, 151); //Blue
-Scalar Purple = Scalar(114, 111, 116); //Purple
-Scalar Brown = Scalar(61, 95, 115); //Brown
+Scalar colorGreen = Scalar(179, 239, 194); //Green
+Scalar colorBlue = Scalar(177, 171, 151); //Blue
+Scalar colorPurple = Scalar(114, 111, 116); //Purple
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Global Variables & Definitions
@@ -138,7 +134,7 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
   returnPoint = Point((Smooth_X), (Smooth_Y));
 
   //Draw Rectangle (For Smooth Follow Visuals)
-  rectangle(frame, Point((Smooth_X - 50), (Smooth_Y - 50)), Point((Smooth_X + 50), (Smooth_Y + 50)), Green, 2, 8, 0);
+  rectangle(frame, Point((Smooth_X - 50), (Smooth_Y - 50)), Point((Smooth_X + 50), (Smooth_Y + 50)), colorGreen, 2, 8, 0);
 
   //Return Value
   return returnPoint;
@@ -156,7 +152,7 @@ void SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Po
   PredictionPoint = Point(Point_1.x + Prediction_X, Point_1.y + Prediction_Y);
 
   //Draw Arrowed Line (For SMooth Follow Visuals)
-  arrowedLine(frame, Middle, PredictionPoint, Blue, 2, 2, 0, 0.1);
+  arrowedLine(frame, Middle, PredictionPoint, colorBlue, 2, 2, 0, 0.1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,7 +290,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   while (ExitWhile != 121) {
     video.read(frame);
     trackingBox = Rect2d(LButtonDown, LButtonHold);
-    rectangle(frame, trackingBox, Purple, 2, 8);
+    rectangle(frame, trackingBox, colorPurple, 2, 8);
     imshow("Video feed", frame);
     ExitWhile = waitKey(25);
   }
@@ -320,7 +316,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
     //Update Boundary Box
     if (tracker->update(frame, trackingBox)) {
-      rectangle(frame, trackingBox, Purple, 2, 8);
+      rectangle(frame, trackingBox, colorPurple, 2, 8);
     }
 
     //Calucalte Position of Bounding Boxpthread_exit(NULL);
