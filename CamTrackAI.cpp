@@ -40,7 +40,6 @@
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
-using namespace high_resolution_clock;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Define colors for GUI
@@ -63,8 +62,8 @@ Fl_Window *secondWindow = 0;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining Properties
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#define SCREEN_X                        1920
-#define SCREEN_Y                        1080
+#define SCREEN_X                        1024
+#define SCREEN_Y                        768
 
 #define VIDEOSOURCE						0 //"/dev/video2"
 
@@ -121,7 +120,7 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
 	double tempX;
-	double tempy;
+	double tempY;
 	Point returnValue;
 	
   //Calculate the weighted mean
@@ -143,12 +142,12 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
 	double tempX;
-	double tempy;
+	double tempY;
 	Point returnValue;
   
   //Calculate the weighted mean
   tempX = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
-  tempy = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
+  tempY = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
 
   //Create the Point where the prediction will be
   returnValue = Point(Point_1.x + tempX, Point_1.y + tempY);
@@ -200,8 +199,8 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   printf("\033c"); //clear console
 
-  PortHandler *portHandler = PortHandler::getPortHandler(DEVICENAME);
-  PacketHandler *packetHandler = PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+  dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
+  dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
   // Open port
   returnValue = portHandler->openPort();
@@ -272,7 +271,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   while (ExitWhile != 121) {
     video.read(frame);
     trackingBox = Rect2d(LButtonDown, LButtonHold);
-    rectangle(frame, trackingBox, Purple, 2, 8);
+    rectangle(frame, trackingBox, colorPurple, 2, 8);
     imshow("Video feed", frame);
     ExitWhile = waitKey(25);
   }
@@ -280,16 +279,16 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   duration<double, milli> time_span;
   double FPS = 0;
-  time_point beginTime = now();
-  time_point endTime = now();
+  high_resolution_clock::time_point beginTime = high_resolution_clock::now();
+  high_resolution_clock::time_point endTime = high_resolution_clock::now();
 
   while (video.read(frame)) {
     //Timestamp 1
-    beginTime = now();
+    beginTime = high_resolution_clock::now();
 
     //Update Boundary Box
     if (tracker->update(frame, trackingBox)) {
-      rectangle(frame, trackingBox, Purple, 2, 8);
+      rectangle(frame, trackingBox, colorPurple, 2, 8);
     }
 
     //Calucalte Position of Bounding Boxpthread_exit(NULL);
@@ -327,14 +326,14 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 	int differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
 	
 	//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
-	if(differnceToCenterX) < 0) {
+	if(differnceToCenterX < 0) {
 		moveMotor = abs(differnceToCenterX) * stepX;
 	} else {
 		moveMotor = (abs(differnceToCenterX) * stepX) + 1024;
 	}
     returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
 	
-	if(differnceToCenterY) < 0) {
+	if(differnceToCenterY < 0) {
 		moveMotor = abs(differnceToCenterY) * stepY;
 	} else {
 		moveMotor = (abs(differnceToCenterY) * stepY) + 1024;
@@ -350,7 +349,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     }
 
     //Timestamp 2 and FPS Calculation
-    endTime = now();
+    endTime = high_resolution_clock::now();
     time_span = endTime - beginTime;
   }
 

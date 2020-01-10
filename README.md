@@ -31,6 +31,18 @@ After you finished the setup, type a final command into the console.
 sudo apt-get install libopencv-dev
 ```
 
+### FLTK (The Fast Light Tool Kit ) installation
+
+Follow these steps to a successful installation of fltk. Whole tutorial is to be found [here](https://courses.cs.washington.edu/courses/cse557/14au/tools/fltk_install.html)
+
+Firstly, you will need to download fltk and extract it. Then follow these steps:
+
+```
+./configure 
+make
+sudo make install
+```
+
 ### Dynamixel SDK installation
 
 We need to load the appropriate Dynamixel library. In the makefile, search for:
@@ -69,7 +81,7 @@ CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
 
 ### Change motor ID
 
-Navigate to CamTrackAI.cpp and find this line.
+Navigate to CamTrackAI.cpp and find this line:
 
 ```
 #define DXL_ID 4
@@ -80,6 +92,17 @@ Change the ID of the motors to match yours. Look it up how to change IDs of moto
 ```
 #define DXL_ID X
 ```
+
+### Change resolution
+
+Navigate to CamTrackAI.cpp and find these lines:
+
+```
+#define SCREEN_X                        1920
+#define SCREEN_Y                        1080
+```
+
+Change them to match your monitor. You can run 'xdpyinfo | grep dimensions' if you need to know them.
 
 ## Compile and Run
 
