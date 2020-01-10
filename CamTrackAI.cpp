@@ -40,9 +40,10 @@
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
+using namespace high_resolution_clock;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Define colors for HUD OpenCV
+//Define colors for GUI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Scalar colorGreen = Scalar(179, 239, 194); //Green
 Scalar colorBlue = Scalar(177, 171, 151); //Blue
@@ -51,33 +52,22 @@ Scalar colorPurple = Scalar(114, 111, 116); //Purple
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Global Variables & Definitions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-double Prediction_X;
-double Prediction_Y;
-double Smooth_X;
-double Smooth_Y;
-Point returnPoint;
-Point PredictionPoint = Point(1, 1);
-Point SmoothPoint = Point(1, 1);
 Point LButtonDown = Point(0, 0);
 Point LButtonHold = Point(0, 0);
-Point CheckPoint;
 bool MouseClicked = false;
 string ChosenTracker = "";
 
-int centerOffset_X;
-int centerOffset_Y;
-int centerOffsetStrength;
-
 Fl_Window *firstWindow = 0;
 Fl_Window *secondWindow = 0;
-Fl_Window *infoWindow = 0;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Defining Properties
+////////////////////////////////////////////////////////////////////////////////////////////////////
 #define SCREEN_X                        1920
 #define SCREEN_Y                        1080
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//Defining motor properties
-////////////////////////////////////////////////////////////////////////////////////////////////////
+#define VIDEOSOURCE						0 //"/dev/video2"
+
 #define CW_ANGLE_LIMIT                  6
 #define CCW_ANGLE_LIMIT                 8
 #define MOVING_SPEED                    32
@@ -89,7 +79,11 @@ Fl_Window *infoWindow = 0;
 #define DEVICENAME                      "/dev/ttyUSB0"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
+// Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
+// @event	Defines for which event the function looks out for.
+// @x		x-coordinate of a point
+// @y		y-coordinate of a point	
+// @flags	
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
   if (event == EVENT_LBUTTONDOWN && MouseClicked == false) {
@@ -126,57 +120,74 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
 //Function for Drawing a smoothed out Rectangle (So Camera wont wiggle)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
+	double tempX;
+	double tempy;
+	Point returnValue;
+	
   //Calculate the weighted mean
-  Smooth_X = ((Point_1.x * 0.4) + (Point_2.x * 0.3) + (Point_3.x * 0.2) + (Point_4.x * 0.05) + (Point_5.x * 0.05));
-  Smooth_Y = ((Point_1.y * 0.4) + (Point_2.y * 0.3) + (Point_3.y * 0.2) + (Point_4.y * 0.05) + (Point_5.y * 0.05));
+  tempX = ((Point_1.x * 0.4) + (Point_2.x * 0.3) + (Point_3.x * 0.2) + (Point_4.x * 0.05) + (Point_5.x * 0.05));
+  tempY = ((Point_1.y * 0.4) + (Point_2.y * 0.3) + (Point_3.y * 0.2) + (Point_4.y * 0.05) + (Point_5.y * 0.05));
 
   //Make Point to return
-  returnPoint = Point((Smooth_X), (Smooth_Y));
+  returnValue = Point((tempX), (tempY));
 
   //Draw Rectangle (For Smooth Follow Visuals)
-  rectangle(frame, Point((Smooth_X - 50), (Smooth_Y - 50)), Point((Smooth_X + 50), (Smooth_Y + 50)), colorGreen, 2, 8, 0);
+  rectangle(frame, Point((tempX - 50), (tempY - 50)), Point((tempX + 50), (tempY + 50)), colorGreen, 2, 8, 0);
 
   //Return Value
-  return returnPoint;
+  return returnValue;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Function for Calcualting a smooth follow
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
+Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
+	double tempX;
+	double tempy;
+	Point returnValue;
+  
   //Calculate the weighted mean
-  Prediction_X = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
-  Prediction_Y = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
+  tempX = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
+  tempy = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
 
   //Create the Point where the prediction will be
-  PredictionPoint = Point(Point_1.x + Prediction_X, Point_1.y + Prediction_Y);
+  returnValue = Point(Point_1.x + tempX, Point_1.y + tempY);
 
   //Draw Arrowed Line (For SMooth Follow Visuals)
-  arrowedLine(frame, Middle, PredictionPoint, colorBlue, 2, 2, 0, 0.1);
+  arrowedLine(frame, Middle, returnValue, colorBlue, 2, 2, 0, 0.1);
+  
+  return returnValue;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Function for handling the whole GUI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker) {
+void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker, Point smoothedCenter) {
   double FPS = 1000/PictureTime;
 
   center_X->value(to_string(Middle.x).c_str());
   center_Y->value(to_string(Middle.y).c_str());
-  SmoothingRation_X->value(to_string(Prediction_X).c_str());
-  SmoothingRation_Y->value(to_string(Prediction_Y).c_str());
+  
+  SmoothingRation_X->value(to_string(smoothedCenter.x).c_str());
+  SmoothingRation_Y->value(to_string(smoothedCenter.y).c_str());
+  
   framesPerSecond->value(to_string(FPS).c_str());
   msecondsPerSecond->value(to_string(PictureTime).c_str());
+  
   ScreenSize_X->value(to_string(FrameInfo.x).c_str());
   ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
+  
   trackerDisplay->value(Tracker.c_str());
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main function 2
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay) {
+	
+	
+	Point prediction;
+	Point smoothedCenter;
 
   //Variables Initializing
   Point Point_1 = Point(1, 9); //Newest Frame
@@ -189,41 +200,26 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   printf("\033c"); //clear console
 
-  dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME); //Initialize PortHandler instance & Set the port path
-  dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION); //Initialize PacketHandler instance & Set the protocol version
+  PortHandler *portHandler = PortHandler::getPortHandler(DEVICENAME);
+  PacketHandler *packetHandler = PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
   // Open port
   returnValue = portHandler->openPort();
-  cout << "OPEN PORTXXX " << returnValue << endl;
 
   // Set port baudrate
   returnValue = portHandler->setBaudRate(BAUDRATE);
-  cout << "BAUDRATE CHANGE " << returnValue << endl;
 
   //Enable torque
   returnValue = packetHandler->write1ByteTxOnly(portHandler, DXL_ID, TORQUE, 1);
-  cout << "TORQUE " << returnValue << endl;
 
   //Set torque limit
   returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, TORQUE_LIMIT, 1023);
-  cout << "TORQUE_LIMIT " << returnValue << endl;
 
   //CW angle limit
   returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, CW_ANGLE_LIMIT, 0);
-  cout << "CW_ANGLE_LIMIT " << returnValue << endl;
 
   //CCW angle limit
   returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, CCW_ANGLE_LIMIT, 0);
-  cout << "CCW_ANGLE_LIMIT " << returnValue << endl;
-
-  //Ask if Internal or External Webcam
-  /*
-  char Input_1;
-  cout << "Would you like to use the Internal, the External Camera or choose a file? [i/e/f]" << endl;
-  do {
-    cin >> Input_1;
-  } while (!cin.fail() && Input_1 != 'i' && Input_1 != 'e' && Input_1 != 'f');
-  */
 
   //Choose Tracker and Start It
   Ptr<Tracker> tracker;
@@ -249,21 +245,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   //Create Capturing Device
   cout << "\nStarting Video Capturing device\t(...)" << endl;
   VideoCapture video;
-  video = VideoCapture(0);
-  /*
-  string Input_3;
-  if (Input_1 == 'i') {
-    video = VideoCapture(0);
-  }
-  if (Input_1 == 'e') {
-    video = VideoCapture("/dev/video2");
-  }
-  if (Input_1 == 'f') {
-    cout << "\nType in your filename with extensions" << endl;
-    cin >> Input_3;
-    video = VideoCapture(Input_3);
-  }
-  */
+  video = VideoCapture(VIDEOSOURCE);
 
   //Check if Capturing Device is up
   if (video.isOpened()) {
@@ -290,33 +272,24 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   while (ExitWhile != 121) {
     video.read(frame);
     trackingBox = Rect2d(LButtonDown, LButtonHold);
-    rectangle(frame, trackingBox, colorPurple, 2, 8);
+    rectangle(frame, trackingBox, Purple, 2, 8);
     imshow("Video feed", frame);
     ExitWhile = waitKey(25);
   }
   tracker->init(frame, trackingBox);
 
-  /*
-  String imageName( "/home/theb3arybear/Desktop/Background.jpg" ); // by default
-  Mat image;
-  image = imread( samples::findFile( imageName ), IMREAD_COLOR ); // Read the file
-  namedWindow( "Display window", WINDOW_NORMAL ); // Create a window for display.             // Show our image inside it.
-  */
-
-  duration<double, std::milli> time_span;
+  duration<double, milli> time_span;
   double FPS = 0;
-  high_resolution_clock::time_point t1 = high_resolution_clock::now();
-  high_resolution_clock::time_point t2 = high_resolution_clock::now();
-
-  float trackerShiftX;
+  time_point beginTime = now();
+  time_point endTime = now();
 
   while (video.read(frame)) {
     //Timestamp 1
-    t1 = high_resolution_clock::now();
+    beginTime = now();
 
     //Update Boundary Box
     if (tracker->update(frame, trackingBox)) {
-      rectangle(frame, trackingBox, colorPurple, 2, 8);
+      rectangle(frame, trackingBox, Purple, 2, 8);
     }
 
     //Calucalte Position of Bounding Boxpthread_exit(NULL);
@@ -325,55 +298,48 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     //Update Points
     Point_5 = Point_4;
     Point_4 = Point_3;
-    Point_3 = Point_2;
+    Point_3 = Point_2	;
     Point_2 = Point_1;
     Point_1 = Middle;
 
     //Smooth out rectangle
-    Middle = SmoothFrame(frame, Point_1, Point_2, Point_3, Point_4, Point_5);
+    smoothedCenter = SmoothFrame(frame, Point_1, Point_2, Point_3, Point_4, Point_5);
 
     //Calls SmoothFollow Function
     SmoothPrediction(frame, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
 
     //Handles whole GUI
-    GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker);
+    GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
 
     Fl::check();
 
-    imshow("Video feed", frame);
-
-  /*
-    //Calculate prediction
-    if (Prediction_X < 0) {
-
-      trackerShiftX = abs(Prediction_X) * 100;
-
-      if (trackerShiftX >= 1023) {
-        trackerShiftX = 1023;
-      }
-    } else {
-      trackerShiftX = abs(Prediction_X) * 100;
-
-      if (trackerShiftX >= 1023) {
-
-        trackerShiftX = 2047;
-
-      } else {
-
-        trackerShiftX = trackerShiftX + 1024;
-
-      }
-    }
-    */
+    imshow("Tracker Source", frame);
 
     //MoveX
-
-
-    trackerShiftX = abs(returnPoint.x - (FrameInfo.x/2));
-
-
-    //Set Speed
-    returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, trackerShiftX);
+	//Screen X= 1920 , Y=1080, so there will be 960px on each side. Then divide this by 1023. 
+	
+	int moveMotor;
+	
+	int stepX = (FrameInfo.x/2) / 1023;
+	int stepY = (FrameInfo.y/2) / 1023;
+	
+	int differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
+	int differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
+	
+	//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
+	if(differnceToCenterX) < 0) {
+		moveMotor = abs(differnceToCenterX) * stepX;
+	} else {
+		moveMotor = (abs(differnceToCenterX) * stepX) + 1024;
+	}
+    returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
+	
+	if(differnceToCenterY) < 0) {
+		moveMotor = abs(differnceToCenterY) * stepY;
+	} else {
+		moveMotor = (abs(differnceToCenterY) * stepY) + 1024;
+	}
+    returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
 
     //For ending the video early
     if (waitKey(25) >= 0) {
@@ -383,14 +349,14 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
       destroyAllWindows();
     }
 
-    //Timestamp 2 and FPS CalculationPrediction_X
-    t2 = high_resolution_clock::now();
-    time_span = t2 - t1;
-
+    //Timestamp 2 and FPS Calculation
+    endTime = now();
+    time_span = endTime - beginTime;
   }
 
   uint8_t receivedPackage;
   uint16_t receivedError;
+  
   do {
     packetHandler->read2ByteRx(portHandler, receivedPackage, &receivedError);
     //Set Speed
@@ -404,18 +370,9 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Buttons for GUI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void b(Fl_Widget *, void * v) {
-  fl_beep();
-
-  Fl_Output* slider = (Fl_Output*) v;
-  slider->value("LEL");
-}
-
 void b_Exit(Fl_Widget *, void *) {
   fl_beep();
   exit(0);
@@ -531,7 +488,6 @@ int FirstWindow(int argc, char **argv) {
   firstWindow->redraw();
 
   return Fl::run();
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -610,33 +566,10 @@ int SecondWindow(int argc, char **argv) {
 
 }
 
-int InfoWindow(int argc, char **argv) {
-
-  infoWindow = new Fl_Window(0,0,1000,100);
-  infoWindow->resizable(infoWindow);
-
-  Fl_Output out2(20, 40, 80, 25, "");
-  Fl_Output *out1 = &out2;
-
-
-  Fl_Button *b3 = new Fl_Button(220,20, 80, 25, "Return");
-  b3->callback(b_Exit,0);
-
-  infoWindow->end();
-  infoWindow->show(argc,argv);
-
-  return Fl::run();
-
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main function
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
-
-  centerOffset_X = 0;
-  centerOffset_Y = 0;
-  centerOffsetStrength = 0;
 
   FirstWindow(argc,argv);
 
