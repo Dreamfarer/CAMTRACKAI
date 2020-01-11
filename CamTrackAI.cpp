@@ -81,8 +81,8 @@ Fl_Window *secondWindow = 0;
 // Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
 // @event	Defines for which event the function looks out for.
 // @x		x-coordinate of a point
-// @y		y-coordinate of a point	
-// @flags	
+// @y		y-coordinate of a point
+// @flags
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
   if (event == EVENT_LBUTTONDOWN && MouseClicked == false) {
@@ -122,7 +122,7 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
 	double tempX;
 	double tempY;
 	Point returnValue;
-	
+
   //Calculate the weighted mean
   tempX = ((Point_1.x * 0.4) + (Point_2.x * 0.3) + (Point_3.x * 0.2) + (Point_4.x * 0.05) + (Point_5.x * 0.05));
   tempY = ((Point_1.y * 0.4) + (Point_2.y * 0.3) + (Point_3.y * 0.2) + (Point_4.y * 0.05) + (Point_5.y * 0.05));
@@ -144,7 +144,7 @@ Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, P
 	double tempX;
 	double tempY;
 	Point returnValue;
-  
+
   //Calculate the weighted mean
   tempX = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
   tempY = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
@@ -154,7 +154,7 @@ Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, P
 
   //Draw Arrowed Line (For SMooth Follow Visuals)
   arrowedLine(frame, Middle, returnValue, colorBlue, 2, 2, 0, 0.1);
-  
+
   return returnValue;
 }
 
@@ -166,16 +166,16 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRati
 
   center_X->value(to_string(Middle.x).c_str());
   center_Y->value(to_string(Middle.y).c_str());
-  
+
   SmoothingRation_X->value(to_string(smoothedCenter.x).c_str());
   SmoothingRation_Y->value(to_string(smoothedCenter.y).c_str());
-  
+
   framesPerSecond->value(to_string(FPS).c_str());
   msecondsPerSecond->value(to_string(PictureTime).c_str());
-  
+
   ScreenSize_X->value(to_string(FrameInfo.x).c_str());
   ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
-  
+
   trackerDisplay->value(Tracker.c_str());
 }
 
@@ -183,8 +183,8 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRati
 //Main function 2
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay) {
-	
-	
+
+
 	Point prediction;
 	Point smoothedCenter;
 
@@ -315,16 +315,16 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     imshow("Tracker Source", frame);
 
     //MoveX
-	//Screen X= 1920 , Y=1080, so there will be 960px on each side. Then divide this by 1023. 
-	
+	//Screen X= 1920 , Y=1080, so there will be 960px on each side. Then divide this by 1023.
+
 	int moveMotor;
-	
+
 	int stepX = (FrameInfo.x/2) / 1023;
 	int stepY = (FrameInfo.y/2) / 1023;
-	
+
 	int differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
 	int differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
-	
+
 	//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
 	if(differnceToCenterX < 0) {
 		moveMotor = abs(differnceToCenterX) * stepX;
@@ -332,7 +332,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 		moveMotor = (abs(differnceToCenterX) * stepX) + 1024;
 	}
     returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
-	
+
 	if(differnceToCenterY < 0) {
 		moveMotor = abs(differnceToCenterY) * stepY;
 	} else {
@@ -355,7 +355,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   uint8_t receivedPackage;
   uint16_t receivedError;
-  
+
   do {
     packetHandler->read2ByteRx(portHandler, receivedPackage, &receivedError);
     //Set Speed
