@@ -143,6 +143,7 @@ void TCPServer () {
 	status = true;
 
 	int positionArray[2];
+      
 
   while(status){
       // get a frame from the camera
@@ -153,18 +154,22 @@ void TCPServer () {
       // send the flipped frame over the network
       std::cout << "Server send" << std::endl;
       send(remoteSocket, flippedFrame.data, imgSize, 0);
-
-      if(recv(remoteSocket, &positionArray, 8, 0) == -1) {
+      
+      returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]);
+      
+      if(recv(remoteSocket, positionArray, 8, 0) == -1) {
         std::cout << "FèèCK" << positionArray << std::endl;
       }
 
-			positionArray[1] = ntohl(positionArray[1]);
-	    positionArray[2] = htonl(positionArray[2]);
+	    positionArray[0] = positionArray[0];
+	    positionArray[1] = positionArray[1];
 
-      std::cout << "Server receive: x:" << positionArray[1] << "<:" << positionArray[2] << std::endl;
+      std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
 
       //Write bytes to Dynamixel Motors
-      returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, client_id);
+      
+      returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
+
 
   }
 
