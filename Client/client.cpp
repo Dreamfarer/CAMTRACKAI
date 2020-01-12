@@ -526,7 +526,6 @@ int SecondWindow(int argc, char **argv) {
   moveCenter->labelsize(25);
   moveCenter->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
-
   Fl_Output *center_X = new Fl_Output(10, 1*(SCREEN_Y/10)+10, 100, 20, "Center (x) ");
   center_X->labelsize(15);
   center_X->align(FL_ALIGN_RIGHT);
@@ -608,7 +607,7 @@ return data;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
 
-  string ls = GetStdoutFromCommand("ip neighbor | grep \"dc:a6:32:03:7e:62\" | cut -d\" \" -f1");
+  string ls = GetStdoutFromCommand("avahi-resolve -n raspberrypi.local -4 | grep \"raspberrypi.local\" | cut -f2");
 
   cout << "LS: " << ls << endl;
 
