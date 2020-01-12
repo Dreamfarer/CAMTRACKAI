@@ -358,11 +358,11 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   		moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
   	}
 
-    positionArray[1] = htonl(moveMotorX);
-    positionArray[2] = htonl(moveMotorY);
+    positionArray[0] = moveMotorX;
+    positionArray[1] = moveMotorY;
 
-    std::cout << "--Send-- differnceToCenterX: " << differnceToCenterX << ", moveMotor: " << moveMotorX << std::endl;
-    send(socket_fd, (const char*)&positionArray , 8, 0);
+    std::cout << "--Send-- moveMotorX: " << moveMotorX << ", moveMotorY: " << moveMotorY << std::endl;
+    send(socket_fd, positionArray , 8, 0);
 
     //For ending the video early
     if (waitKey(25) >= 0) {
