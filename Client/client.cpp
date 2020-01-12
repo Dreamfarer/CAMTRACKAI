@@ -70,8 +70,6 @@ Fl_Window *secondWindow = 0;
 
 #define PORT                            4097
 
-#define VIDEOSOURCE					          	0 //"/dev/video2"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
 // @event	Defines for which event the function looks out for.
@@ -114,9 +112,9 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
 //Function for Drawing a smoothed out Rectangle (So Camera wont wiggle)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
-	double tempX;
-	double tempY;
-	Point returnValue;
+  double tempX;
+  double tempY;
+  Point returnValue;
 
   //Calculate the weighted mean
   tempX = ((Point_1.x * 0.4) + (Point_2.x * 0.3) + (Point_3.x * 0.2) + (Point_4.x * 0.05) + (Point_5.x * 0.05));
@@ -136,9 +134,9 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
 //Function for Calcualting a smooth follow
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
-	double tempX;
-	double tempY;
-	Point returnValue;
+  double tempX;
+  double tempY;
+  Point returnValue;
 
   //Calculate the weighted mean
   tempX = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
@@ -179,8 +177,8 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRati
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP) {
 
-	Point prediction;
-	Point smoothedCenter;
+  Point prediction;
+  Point smoothedCenter;
 
   //Variables Initializing
   Point Point_1 = Point(1, 9); //Newest Frame
@@ -206,7 +204,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   //Initiate Socket
   if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-      cout << "socket()\tERROR!" << endl;
+    cout << "socket()\tERROR!" << endl;
   }
 
   //Specify socket propertirs (Port, IP Address)
@@ -216,30 +214,30 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   //Connect to socket
   if (connect(socket_fd, (sockaddr*)&serverAddr, addrLen) < 0) {
-      cout << "connect()\tERROR!" << endl;
+    cout << "connect()\tERROR!" << endl;
   }
 
 
-    //Choose Tracker and Start It
-    Ptr<Tracker> tracker;
-    if (ChosenTracker == "KCF") {
-      tracker = TrackerKCF::create();
-    } else if (ChosenTracker == "CSRT") {
-      tracker = TrackerCSRT::create();
-    } else if (ChosenTracker == "TLD") {
-      tracker = TrackerTLD::create();
-    } else if (ChosenTracker == "MIL") {
-      tracker = TrackerMIL::create();
-    } else if (ChosenTracker == "MOSSE") {
-      tracker = TrackerMOSSE::create();
-    } else if (ChosenTracker == "Boosting") {
-      tracker = TrackerBoosting::create();
-    } else if (ChosenTracker == "MedianFlow") {
-      tracker = TrackerMedianFlow::create();
-    } else {
-      cout << "Error chosing tracker" << endl;
-      exit(0);
-    }
+  //Choose Tracker and Start It
+  Ptr<Tracker> tracker;
+  if (ChosenTracker == "KCF") {
+    tracker = TrackerKCF::create();
+  } else if (ChosenTracker == "CSRT") {
+    tracker = TrackerCSRT::create();
+  } else if (ChosenTracker == "TLD") {
+    tracker = TrackerTLD::create();
+  } else if (ChosenTracker == "MIL") {
+    tracker = TrackerMIL::create();
+  } else if (ChosenTracker == "MOSSE") {
+    tracker = TrackerMOSSE::create();
+  } else if (ChosenTracker == "Boosting") {
+    tracker = TrackerBoosting::create();
+  } else if (ChosenTracker == "MedianFlow") {
+    tracker = TrackerMedianFlow::create();
+  } else {
+    cout << "Error chosing tracker" << endl;
+    exit(0);
+  }
 
   //
   //OpenCV Code
@@ -335,33 +333,29 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
     imshow("CamTrackAI", img);
 
-    //MoveX
-  	//Screen X= 1920 , Y=1080, so there will be 960px on each side. Then divide this by 1023.
-
     //480/2 = 240
-  	stepX = 1023 / (FrameInfo.x/2);
-  	stepY = 1023 / (FrameInfo.y/2);
+    stepX = 1023 / (FrameInfo.x/2);
+    stepY = 1023 / (FrameInfo.y/2);
 
-  	differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
-  	differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
+    differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
+    differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
 
-  	//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
-  	if(differnceToCenterX < 0) {
-  		moveMotorX = abs(differnceToCenterX) * stepX;
-  	} else {
-  		moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
-  	}
+    //Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
+    if(differnceToCenterX < 0) {
+      moveMotorX = abs(differnceToCenterX) * stepX;
+    } else {
+      moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
+    }
 
     if(differnceToCenterY < 0) {
-  		moveMotorY = abs(differnceToCenterY) * stepY;
-  	} else {
-  		moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
-  	}
+      moveMotorY = abs(differnceToCenterY) * stepY;
+    } else {
+      moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
+    }
 
     positionArray[0] = moveMotorX;
     positionArray[1] = moveMotorY;
 
-    std::cout << "--Send-- moveMotorX: " << moveMotorX << ", moveMotorY: " << moveMotorY << std::endl;
     send(socket_fd, positionArray , 8, 0);
 
     //For ending the video early
@@ -580,24 +574,24 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
 //https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/
 string GetStdoutFromCommand(string cmd) {
 
-string data;
-FILE * stream;
+  string data;
+  FILE * stream;
 
-const int max_buffer = 256;
-char buffer[max_buffer];
+  const int max_buffer = 256;
+  char buffer[max_buffer];
 
-cmd.append(" 2>&1");
-stream = popen(cmd.c_str(), "r");
+  cmd.append(" 2>&1");
+  stream = popen(cmd.c_str(), "r");
 
-if (stream) {
+  if (stream) {
     while (!feof(stream)) {
-    if (fgets(buffer, max_buffer, stream) != NULL) {
-            data.append(buffer);
-        }
+      if (fgets(buffer, max_buffer, stream) != NULL) {
+        data.append(buffer);
+      }
     }
     pclose(stream);
-}
-return data;
+  }
+  return data;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
