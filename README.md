@@ -1,6 +1,8 @@
 # CamTrackAI
 
-This is our project work for school. It is a device that rotates a camera in x and y direction according to object tracker data by OpenCV.
+This is our project work for school. It is an autonomous device powered by a Raspberry Pi 4 that rotates a camera according to object tracker data by OpenCV.
+
+It uses the TCP/IP to send a video source from the Raspberry Pi to a more powerful computer to calculates the object tracking. It will return the calculated data to the Raspberry Pi which then communicates with our Dynamixel Rx-64 motors.
 
 ## Prerequisites
 
@@ -8,15 +10,15 @@ You will need these following utilities/devices:
 
 * [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robotis Dynamixel motor. They are used to turn the camera.
 * [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the motors.
-
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
 * [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used. But you can use any computer with any Linux distro.
 
-You will need the following libraries to compile this code:
+You will need the following libraries/packages to compile this code:
 
 * [OpenCV](https://opencv.org/releases/) (Not included, installing instructions further down) - For the tracking algorithm
-* [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) (Necessary parts included) - For controlling the dynamxiel motors
-* [fltk 1.3.5](https://www.fltk.org/software.php) (Necessary parts included) - For the GUI
+* [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) (Necessary parts included) - For controlling the Dynamxiel motors
+* [FLTK](https://www.fltk.org/software.php) (Necessary parts included) - For the GUI
+* [Avahi-Daemon](https://linux.die.net/man/8/avahi-daemon) (Not included, installing instructions further down) - Used for mDNS to resolve an IP address by a hostname.
 
 
 ## Installing
@@ -33,12 +35,12 @@ sudo apt-get install libopencv-dev
 
 ### FLTK (The Fast Light Tool Kit ) installation
 
-Follow these steps to a successful installation of fltk. Whole tutorial is to be found [here](https://courses.cs.washington.edu/courses/cse557/14au/tools/fltk_install.html)
+Follow these steps to a successful installation of FLTK. The complete tutorial is to be found [here](https://courses.cs.washington.edu/courses/cse557/14au/tools/fltk_install.html)
 
-Firstly, you will need to download fltk and extract it. Then follow these steps:
+Firstly, you will need to download FLTK and extract it. Then follow these steps:
 
 ```
-./configure 
+./configure
 make
 sudo make install
 ```
@@ -64,6 +66,11 @@ cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux_sbc
 make
 sudo make install
 ```
+### Avahi Daemon installation
+
+```
+sudo apt-get install avahi-daemon
+```
 
 ### Change path
 
@@ -84,7 +91,8 @@ CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
 Navigate to CamTrackAI.cpp and find this line:
 
 ```
-#define DXL_ID 4
+#define DXL_ID_1
+#define DXL_ID_2
 ```
 
 Change the ID of the motors to match yours. Look it up how to change IDs of motors on the internet if you encounter problems.
@@ -120,18 +128,30 @@ Then run the application with:
 
 ## Further information
 
-To completely remove OpenCV type into commandline:
+To completely remove OpenCV, type the following line into console:
 
 ```
 find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 ```
 
+## Known Issues (Unsolved)
+
+* There are issues communicating with more than one Dynamixel motor. For unknown reason you cannot talk to two motors shortly after each other. There must be a short pause.
+* After some time it may well be that the program stops for unknown reason.
+
 ## Authors
 
-* **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/GitHub* - [BE3dARt.ch](https://be3dart.ch/)
-* **Kay** - *Project Planning/Planning and building of tower*
-* **Luca** - *Project Planning/Helping Hand*
+* **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/GitHub/Documentation* - [BE3dARt.ch](https://be3dart.ch/)
+* **Kay** - *Project Planning/Planning and building of construction*
+* **Luca** - *Project Planning*
+
+* **Jeremy Morgan** - *Provided code for reading output of a console command (GetStdoutFromCommand function in client.cpp)* - [Found Here](https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/)
+* **Steve Tuenkam** - *Provided idea behind sending video over TCP/IP using OpenCV* - [Found Here](https://gist.github.com/Tryptich/2a15909e384b582c51b5)
+
+## Thanks to
+
+Linus Torvalds for creating the best kernel, the guys over Parrot OS for the best Linux distro, the whole stackoverflow community for providing ideas and saving programmers' lives.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.

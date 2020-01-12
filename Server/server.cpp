@@ -20,8 +20,8 @@
 using namespace cv;
 using namespace std;
 
-#define DXL_ID_1                          1
-#define DXL_ID_2                          2
+#define DXL_ID_1                        1
+#define DXL_ID_2                        2
 
 #define VIDEOSOURCE											0
 
@@ -183,7 +183,7 @@ void TCPServer () {
 	// Close port
 	portHandler->closePort();
 
-	// close the socket
+	// close socket
 	close(remoteSocket);
 
 	return;
