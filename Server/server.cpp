@@ -131,7 +131,7 @@ void TCPServer () {
 	//Set torque limit
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, TORQUE_LIMIT, 1023);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, TORQUE_LIMIT, 1023);
-	
+
 	//CW angle limit
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CW_ANGLE_LIMIT, 0);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CW_ANGLE_LIMIT, 0);
@@ -141,6 +141,8 @@ void TCPServer () {
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CCW_ANGLE_LIMIT, 0);
 
 	status = true;
+
+	int positionArray[2];
 
   while(status){
       // get a frame from the camera
@@ -152,15 +154,18 @@ void TCPServer () {
       std::cout << "Server send" << std::endl;
       send(remoteSocket, flippedFrame.data, imgSize, 0);
 
-      if(recv(remoteSocket, &my_net_id, 4, 0) == -1) {
-        std::cout << "FèèCK" << my_net_id << std::endl;
+      if(recv(remoteSocket, &positionArray, 8, 0) == -1) {
+        std::cout << "FèèCK" << positionArray << std::endl;
       }
-      client_id = ntohl(my_net_id);
-      std::cout << "Server receive: " << client_id << std::endl;
+
+			positionArray[1] = ntohl(positionArray[1]);
+	    positionArray[2] = htonl(positionArray[2]);
+
+      std::cout << "Server receive: x:" << positionArray[1] << "<:" << positionArray[2] << std::endl;
 
       //Write bytes to Dynamixel Motors
       returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, client_id);
-      
+
   }
 
 	uint8_t receivedPackage;

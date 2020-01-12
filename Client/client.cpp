@@ -177,7 +177,7 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRati
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main function 2
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, char* serverIP) {
+int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP) {
 
 	Point prediction;
 	Point smoothedCenter;
@@ -289,13 +289,16 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   high_resolution_clock::time_point beginTime = high_resolution_clock::now();
   high_resolution_clock::time_point endTime = high_resolution_clock::now();
 
-  int moveMotor;
+  int moveMotorX;
+  int moveMotorY;
   int stepX;
   int stepY;
   int differnceToCenterX;
   int differnceToCenterY;
 
   bool running = true;
+
+  int positionArray[2];
 
   while (running) {
     //Timestamp 1
@@ -344,25 +347,22 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   	//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
   	if(differnceToCenterX < 0) {
-  		moveMotor = abs(differnceToCenterX) * stepX;
+  		moveMotorX = abs(differnceToCenterX) * stepX;
   	} else {
-  		moveMotor = (abs(differnceToCenterX) * stepX) + 1024;
+  		moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
   	}
 
-    my_id = moveMotor;
-    my_net_id = htonl(moveMotor);
-
-    std::cout << "--Send-- differnceToCenterX: " << differnceToCenterX << ", moveMotor: " << moveMotor << std::endl;
-    send(socket_fd, (const char*)&my_net_id , 4, 0);
-
-    /*
-  	if(differnceToCenterY < 0) {
-  		moveMotor = abs(differnceToCenterY) * stepY;
+    if(differnceToCenterY < 0) {
+  		moveMotorY = abs(differnceToCenterY) * stepY;
   	} else {
-  		moveMotor = (abs(differnceToCenterY) * stepY) + 1024;
+  		moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
   	}
-      returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
-    */
+
+    positionArray[1] = htonl(moveMotorX);
+    positionArray[2] = htonl(moveMotorY);
+
+    std::cout << "--Send-- differnceToCenterX: " << differnceToCenterX << ", moveMotor: " << moveMotorX << std::endl;
+    send(socket_fd, (const char*)&positionArray , 8, 0);
 
     //For ending the video early
     if (waitKey(25) >= 0) {
@@ -505,7 +505,7 @@ int FirstWindow(int argc, char **argv) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Second Page. This is the main Tracker HUD/GUI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-int SecondWindow(int argc, char **argv) {
+int SecondWindow(int argc, char **argv, const char* serverIP) {
 
   //Create the window
   secondWindow = new Fl_Window(0,0,SCREEN_X/2,SCREEN_Y);
@@ -571,8 +571,6 @@ int SecondWindow(int argc, char **argv) {
   secondWindow->end();
   secondWindow->show(argc,argv);
 
-  char* serverIP = argv[1];
-
   thread threadObj(TrackerMain, trackerInfo, videoInfo, center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP);
 
   return Fl::run();
@@ -609,10 +607,10 @@ int main(int argc, char **argv) {
 
   string ls = GetStdoutFromCommand("avahi-resolve -n raspberrypi.local -4 | grep \"raspberrypi.local\" | cut -f2");
 
-  cout << "LS: " << ls << endl;
+  const char *serverIP = ls.c_str();
 
   FirstWindow(argc,argv);
 
-  SecondWindow(argc,argv);
+  SecondWindow(argc,argv, serverIP);
 
 }
