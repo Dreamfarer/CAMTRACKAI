@@ -20,18 +20,23 @@
 using namespace cv;
 using namespace std;
 
+#define DXL_ID_1                          1
+#define DXL_ID_2                          2
+
 #define SCREEN_X                        1024
 #define SCREEN_Y                        768
-#define VIDEOSOURCE											0 //"/dev/video2"
+
+#define VIDEOSOURCE			0
+
 #define CW_ANGLE_LIMIT                  6
 #define CCW_ANGLE_LIMIT                 8
 #define MOVING_SPEED                    32
 #define TORQUE                          24
 #define TORQUE_LIMIT                    34
 #define PROTOCOL_VERSION                1.0
-#define DXL_ID                          4
 #define BAUDRATE                        57600
 #define DEVICENAME                      "/dev/ttyUSB0"
+
 #define PORT                            4097
 
 void TCPServer () {
@@ -97,6 +102,9 @@ void TCPServer () {
 		cout << "Starting Video Capturing device\t(...)\tError!" << endl;
 	}
 
+  cap.set(CAP_PROP_FRAME_WIDTH, 480);
+  cap.set(CAP_PROP_FRAME_HEIGHT, 300);
+
   int height = cap.get(CAP_PROP_FRAME_HEIGHT);
   int width = cap.get(CAP_PROP_FRAME_WIDTH);
 
@@ -117,16 +125,20 @@ void TCPServer () {
 	returnValue = portHandler->setBaudRate(BAUDRATE);
 
 	//Enable torque
-	returnValue = packetHandler->write1ByteTxOnly(portHandler, DXL_ID, TORQUE, 1);
+	returnValue = packetHandler->write1ByteTxOnly(portHandler, DXL_ID_1, TORQUE, 1);
+	returnValue = packetHandler->write1ByteTxOnly(portHandler, DXL_ID_2, TORQUE, 1);
 
 	//Set torque limit
-	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, TORQUE_LIMIT, 1023);
-
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, TORQUE_LIMIT, 1023);
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, TORQUE_LIMIT, 1023);
+	
 	//CW angle limit
-	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, CW_ANGLE_LIMIT, 0);
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CW_ANGLE_LIMIT, 0);
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CW_ANGLE_LIMIT, 0);
 
 	//CCW angle limit
-	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, CCW_ANGLE_LIMIT, 0);
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CCW_ANGLE_LIMIT, 0);
+	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CCW_ANGLE_LIMIT, 0);
 
 	status = true;
 
@@ -146,9 +158,9 @@ void TCPServer () {
       client_id = ntohl(my_net_id);
       std::cout << "Server receive: " << client_id << std::endl;
 
-			//Write bytes to Dynamixel Motors
-			returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, client_id);
-			//returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, moveMotor);
+      //Write bytes to Dynamixel Motors
+      returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, client_id);
+      
   }
 
 	uint8_t receivedPackage;
@@ -157,7 +169,8 @@ void TCPServer () {
 	do {
 		packetHandler->read2ByteRx(portHandler, receivedPackage, &receivedError);
 		//Set Speed
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID, MOVING_SPEED, 0);
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, 0);
 	} while(receivedError != 0);
 
 	// Close port
