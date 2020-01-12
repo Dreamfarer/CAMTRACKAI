@@ -245,12 +245,12 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   //OpenCV Code
   //
   Mat img;
-  img = Mat::zeros(480 , 640, CV_8UC3);
+  img = Mat::zeros(300 , 480, CV_8UC3);
   int imgSize = img.total() * img.elemSize();
   uchar *iptr = img.data;
   int key;
 
-  Point FrameInfo = Point(640, 480);
+  Point FrameInfo = Point(480, 300);
 
   std::cout << "Image Size:" << imgSize << std::endl;
 
@@ -304,7 +304,6 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     std::cout << "Client receive" << std::endl;
     recv(socket_fd, iptr, imgSize , MSG_WAITALL);
 
-
     //Update Boundary Box
     if (tracker->update(img, trackingBox)) {
       rectangle(img, trackingBox, colorPurple, 2, 8);
@@ -336,8 +335,9 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     //MoveX
   	//Screen X= 1920 , Y=1080, so there will be 960px on each side. Then divide this by 1023.
 
-  	stepX = (FrameInfo.x/2) / 1023;
-  	stepY = (FrameInfo.y/2) / 1023;
+    //480/2 = 240
+  	stepX = 1023 / (FrameInfo.x/2);
+  	stepY = 1023 / (FrameInfo.y/2);
 
   	differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
   	differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
@@ -350,9 +350,9 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   	}
 
     my_id = moveMotor;
-    my_net_id = htonl(my_id);
+    my_net_id = htonl(moveMotor);
 
-    std::cout << "Client Send" << std::endl;
+    std::cout << "--Send-- differnceToCenterX: " << differnceToCenterX << ", moveMotor: " << moveMotor << std::endl;
     send(socket_fd, (const char*)&my_net_id , 4, 0);
 
     /*
@@ -580,10 +580,37 @@ int SecondWindow(int argc, char **argv) {
 
 }
 
+//https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/
+string GetStdoutFromCommand(string cmd) {
+
+string data;
+FILE * stream;
+
+const int max_buffer = 256;
+char buffer[max_buffer];
+
+cmd.append(" 2>&1");
+stream = popen(cmd.c_str(), "r");
+
+if (stream) {
+    while (!feof(stream)) {
+    if (fgets(buffer, max_buffer, stream) != NULL) {
+            data.append(buffer);
+        }
+    }
+    pclose(stream);
+}
+return data;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main function
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) {
+
+  string ls = GetStdoutFromCommand("ip neighbor | grep \"dc:a6:32:03:7e:62\" | cut -d\" \" -f1");
+
+  cout << "LS: " << ls << endl;
 
   FirstWindow(argc,argv);
 
