@@ -1,11 +1,6 @@
-/**
-* OpenCV video streaming over TCP/IP
-* Server: Captures video from a webcam and send it to a client
-* by Isaac Maia
-*
-* modified by Sheriff Olaoye (sheriffolaoye.com)
-*/
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Include header files
+////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "opencv2/opencv.hpp"
 #include <iostream>
 #include <sys/socket.h>
@@ -17,13 +12,19 @@
 
 #include "dynamixel_sdk.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Defining namespaces
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 using namespace cv;
 using namespace std;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Defining Properties
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Dynamixel
 #define DXL_ID_1                        1
 #define DXL_ID_2                        2
-
-#define VIDEOSOURCE											0
 
 #define CW_ANGLE_LIMIT                  6
 #define CCW_ANGLE_LIMIT                 8
@@ -35,49 +36,53 @@ using namespace std;
 #define BAUDRATE                        57600
 #define DEVICENAME                      "/dev/ttyUSB0"
 
+//OpenCV
+#define VIDEOSOURCE											0
+
+//Networking
 #define PORT                            4097
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//Main Function
+////////////////////////////////////////////////////////////////////////////////////////////////////
 void TCPServer () {
-	//Inizializing Variables
+	//Inizializing variables and structs
 	int returnValue;
-
 	int localSocket;
 	int remoteSocket;
-	int port = PORT;
-
 	bool status = true;
-
-	VideoCapture cap(VIDEOSOURCE);
-
-	int my_net_id;
-	int client_id;
-
-	//Networking
+	int positionArray[2];
+	Mat img;
+	Mat flippedFrame;
 	struct sockaddr_in localAddr;
 	struct sockaddr_in remoteAddr;
-
 	int addrLen = sizeof(struct sockaddr_in);
 
+	//Populating struct for socket
+	localAddr.sin_family = AF_INET;
+	localAddr.sin_addr.s_addr = INADDR_ANY;
+	localAddr.sin_port = htons(PORT);
+
+	//Set video device
+	VideoCapture cap(VIDEOSOURCE);
+
+	//Setup/ prepare socket and check if it an error occurs.
 	if ((localSocket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
 		cout << "socket()\tERROR!" << endl;
 		return;
 	}
 
-	localAddr.sin_family = AF_INET;
-	localAddr.sin_addr.s_addr = INADDR_ANY;
-	localAddr.sin_port = htons( port );
-
+	//Bind struct with socket and check if an error occurs.
 	if (bind(localSocket,(struct sockaddr *)&localAddr , sizeof(localAddr)) < 0) {
 		cout << "bind()\tERROR!" << endl;
 		close(localSocket);
 		return;
 	}
 
-	// Listening
+	// Listening for an incoming connection
 	listen(localSocket , 3);
-	std::cout <<  "Waiting for connections...\n" << endl;
 
-	//accept connection from an incoming client
+	//Loop through function until a client connects to the socket
 	while(status){
 		if ((remoteSocket = accept(localSocket, (struct sockaddr *)&remoteAddr, (socklen_t*)&addrLen)) < 0) {
 			cout << "accept()\tERROR" << endl;
@@ -89,37 +94,33 @@ void TCPServer () {
 		}
 	}
 
-	//OpenCV
-	Mat img, flippedFrame;
-
-	//Check if Capturing Device is up
-	if (cap.isOpened()) {
-		cout << "Starting Video Capturing device\t(...)\tSuccess!" << endl;
-	}
-	else {
-		cout << "Starting Video Capturing device\t(...)\tError!" << endl;
+	//Check if the capturing devics is up
+	if (cap.isOpened() == false) {
+		cout << "Opening capturing device\tERROR!" << endl;
 	}
 
+	//Adjust the resolution of capture device
 	cap.set(CAP_PROP_FRAME_WIDTH, 480);
 	cap.set(CAP_PROP_FRAME_HEIGHT, 300);
 
+	//Get resolution of capturing device
 	int height = cap.get(CAP_PROP_FRAME_HEIGHT);
 	int width = cap.get(CAP_PROP_FRAME_WIDTH);
 
-	std::cout << "height: " << height << std::endl;
-	std::cout << "width: " << width << std::endl;
-
+	//Populate matrix with 0
 	img = Mat::zeros(height, width, CV_8UC3);
-	int imgSize = img.total() * img.elemSize();
-	std::cout << "Image Size:" << imgSize << std::endl;
 
+	//Calucalte image size for sending over TCP_IP
+	int imgSize = img.total() * img.elemSize();
+
+	//Define port and protocol version for communicating with Dynamixel motors
 	dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
 	dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
-	// Open port
+	//Open port
 	returnValue = portHandler->openPort();
 
-	// Set port baudrate
+	//Set port baudrate
 	returnValue = portHandler->setBaudRate(BAUDRATE);
 
 	//Enable torque
@@ -130,18 +131,15 @@ void TCPServer () {
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, TORQUE_LIMIT, 1023);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, TORQUE_LIMIT, 1023);
 
-	//CW angle limit
+	//CW angle limit (Used to set motors to wheel mode)
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CW_ANGLE_LIMIT, 0);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CW_ANGLE_LIMIT, 0);
 
-	//CCW angle limit
+	//CCW angle limit (Used to set motors to wheel mode)
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CCW_ANGLE_LIMIT, 0);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CCW_ANGLE_LIMIT, 0);
 
 	status = true;
-
-	int positionArray[2];
-
 	while(status){
 		// get a frame from the camera
 		cap >> img;
@@ -164,10 +162,7 @@ void TCPServer () {
 		std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
 
 		//Write bytes to Dynamixel Motors
-
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
-
-
 	}
 
 	uint8_t receivedPackage;
