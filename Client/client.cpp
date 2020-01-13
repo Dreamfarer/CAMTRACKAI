@@ -185,6 +185,22 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
   Point prediction;
   Point smoothedCenter;
 
+  int moveMotorX;
+  int moveMotorY;
+  int stepX;
+  int stepY;
+  int differnceToCenterX;
+  int differnceToCenterY;
+
+  bool running = true;
+  bool runningMain = true;
+
+  int positionArray[2] = {0, 0};
+
+  duration<double, milli> time_span;
+  high_resolution_clock::time_point beginTime = high_resolution_clock::now();
+  high_resolution_clock::time_point endTime = high_resolution_clock::now();
+
   //Variables Initializing
   Point Point_1 = Point(1, 9); //Newest Frame
   Point Point_2 = Point(2, 8);
@@ -221,27 +237,6 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     cout << "connect()\tERROR!" << endl;
   }
 
-  //Choose Tracker and Start It
-  Ptr<Tracker> tracker;
-  if (ChosenTracker == "KCF") {
-    tracker = TrackerKCF::create();
-  } else if (ChosenTracker == "CSRT") {
-    tracker = TrackerCSRT::create();
-  } else if (ChosenTracker == "TLD") {
-    tracker = TrackerTLD::create();
-  } else if (ChosenTracker == "MIL") {
-    tracker = TrackerMIL::create();
-  } else if (ChosenTracker == "MOSSE") {
-    tracker = TrackerMOSSE::create();
-  } else if (ChosenTracker == "Boosting") {
-    tracker = TrackerBoosting::create();
-  } else if (ChosenTracker == "MedianFlow") {
-    tracker = TrackerMedianFlow::create();
-  } else {
-    cout << "Error chosing tracker" << endl;
-    exit(0);
-  }
-
   //
   //OpenCV Code
   //
@@ -252,144 +247,163 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
   Point FrameInfo = Point(480, 300);
 
-  std::cout << "Image Size:" << imgSize << std::endl;
-
   namedWindow("CamTrackAI", WINDOW_NORMAL);
 
   //set the callback function for any mouse event
   setMouseCallback("CamTrackAI", CallBackFunc, NULL);
 
-
-  //Choose what object to track
   Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0));
   int ExitWhile = 0;
-
   int my_id = 1234;
   int my_net_id = htonl(my_id);
 
-  while (ExitWhile != 121) {
-    std::cout << "Client receive" << std::endl;
-    recv(socket_fd, iptr, imgSize , MSG_WAITALL);
+  while (runningMain) {
 
-    std::cout << "Client Send" << std::endl;
-    send(socket_fd, (const char*)&my_net_id , 8, 0);
+    positionArray[0] = 0;
+    positionArray[1] = 0;
 
-    trackingBox = Rect2d(LButtonDown, LButtonHold);
-    rectangle(img, trackingBox, colorPurple, 2, 8);
-
-    imshow("CamTrackAI", img);
-
-    ExitWhile = waitKey(25);
-  }
-
-  tracker->init(img, trackingBox);
-
-  duration<double, milli> time_span;
-  high_resolution_clock::time_point beginTime = high_resolution_clock::now();
-  high_resolution_clock::time_point endTime = high_resolution_clock::now();
-  time_span = beginTime-endTime;
-
-  int moveMotorX;
-  int moveMotorY;
-  int stepX;
-  int stepY;
-  int differnceToCenterX;
-  int differnceToCenterY;
-
-  bool running = true;
-
-  int positionArray[2];
-
-  while (running) {
-    //Timestamp 1
-    beginTime = high_resolution_clock::now();
-
-    if (recv(socket_fd, iptr, imgSize , MSG_WAITALL)) {
-      cout << "recv()\tERROR!" << endl;
-
-      positionArray[0] = 0;
-      positionArray[1] = 0;
-
-      send(socket_fd, positionArray , 8, 0);
-      close(socket_fd);
-
-      running = false;
-
+    //Choose Tracker and Start It
+    Ptr<Tracker> tracker;
+    if (ChosenTracker == "KCF") {
+      tracker = TrackerKCF::create();
+    } else if (ChosenTracker == "CSRT") {
+      tracker = TrackerCSRT::create();
+    } else if (ChosenTracker == "TLD") {
+      tracker = TrackerTLD::create();
+    } else if (ChosenTracker == "MIL") {
+      tracker = TrackerMIL::create();
+    } else if (ChosenTracker == "MOSSE") {
+      tracker = TrackerMOSSE::create();
+    } else if (ChosenTracker == "Boosting") {
+      tracker = TrackerBoosting::create();
+    } else if (ChosenTracker == "MedianFlow") {
+      tracker = TrackerMedianFlow::create();
+    } else {
+      cout << "Error chosing tracker" << endl;
       exit(0);
     }
 
-    //Tracker searches for object in current frame. If it fails to find the object, this loop will send a 0 to the motors, indicating not to move.
-    if (tracker->update(img, trackingBox) == true) {
+    //Choose what object to track
+    while (ExitWhile != 121) {
+      recv(socket_fd, iptr, imgSize , MSG_WAITALL);
+
+      send(socket_fd, positionArray , 8, 0);
+
+      trackingBox = Rect2d(LButtonDown, LButtonHold);
       rectangle(img, trackingBox, colorPurple, 2, 8);
-
-      //Calucalte Position of Bounding Boxpthread_exit(NULL);
-      Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));
-
-      //Update Points
-      Point_5 = Point_4;
-      Point_4 = Point_3;
-      Point_3 = Point_2;
-      Point_2 = Point_1;
-      Point_1 = Middle;
-
-      //Smooth out rectangle
-      smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
-
-      //Calls SmoothFollow Function
-      SmoothPrediction(img, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
-
-      //Handles whole GUI
-      GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
-
-      Fl::check();
 
       imshow("CamTrackAI", img);
 
-      //480/2 = 240
-      stepX = 1023 / (FrameInfo.x/2);
-      stepY = 1023 / (FrameInfo.y/2);
-
-      differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
-      differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
-
-      //Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
-      if(differnceToCenterX < 0) {
-        moveMotorX = abs(differnceToCenterX) * stepX;
-      } else {
-        moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
-      }
-
-      if(differnceToCenterY < 0) {
-        moveMotorY = abs(differnceToCenterY) * stepY;
-      } else {
-        moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
-      }
-
-      positionArray[0] = moveMotorX;
-      positionArray[1] = moveMotorY;
-    } else {
-      positionArray[0] = 0;
-      positionArray[1] = 0;
+      ExitWhile = waitKey(25);
     }
 
-    if (shutdownActivated == true || rebootActivated == true) {
-      if (shutdownActivated) {
-        positionArray[0] = SHUTDOWN;
-      } else {
-        positionArray[0] = REBOOT;
+    ExitWhile = 0;
+
+    tracker->init(img, trackingBox);
+
+    running = true;
+
+    while (running) {
+      //Timestamp 1
+      beginTime = high_resolution_clock::now();
+
+      if (recv(socket_fd, iptr, imgSize , MSG_WAITALL) == -1) {
+        cout << "recv()\tERROR!" << endl;
+
+        positionArray[0] = 0;
+        positionArray[1] = 0;
+
+        send(socket_fd, positionArray , 8, 0);
+        close(socket_fd);
+
+        running = false;
+
+        exit(0);
       }
-      send(socket_fd, positionArray , 8, 0);
-      close(socket_fd);
 
-      running = false;
-    } else {
-      send(socket_fd, positionArray , 8, 0);
+      //Tracker searches for object in current frame. If it fails to find the object, this loop will send a 0 to the motors, indicating not to move.
+      if (tracker->update(img, trackingBox) == true) {
+        rectangle(img, trackingBox, colorPurple, 2, 8);
+
+        //Calucalte Position of Bounding Boxpthread_exit(NULL);
+        Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));
+
+        //Update Points
+        Point_5 = Point_4;
+        Point_4 = Point_3;
+        Point_3 = Point_2;
+        Point_2 = Point_1;
+        Point_1 = Middle;
+
+        //Smooth out rectangle
+        smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
+
+        //Calls SmoothFollow Function
+        SmoothPrediction(img, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
+
+        //Handles whole GUI
+        GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
+
+        Fl::check();
+
+
+        imshow("CamTrackAI", img);
+
+
+        //480/2 = 240
+        stepX = 1023 / (FrameInfo.x/2);
+        stepY = 1023 / (FrameInfo.y/2);
+
+        differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
+        differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
+
+        //Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
+        if(differnceToCenterX < 0) {
+          moveMotorX = abs(differnceToCenterX) * stepX;
+        } else {
+          moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
+        }
+
+        if(differnceToCenterY < 0) {
+          moveMotorY = abs(differnceToCenterY) * stepY;
+        } else {
+          moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
+        }
+
+        positionArray[0] = moveMotorX;
+        positionArray[1] = moveMotorY;
+      } else {
+        positionArray[0] = 0;
+        positionArray[1] = 0;
+      }
+
+      if (shutdownActivated == true || rebootActivated == true) {
+        if (shutdownActivated) {
+          positionArray[0] = SHUTDOWN;
+        } else {
+          positionArray[0] = REBOOT;
+        }
+        send(socket_fd, positionArray , 8, 0);
+
+        running = false;
+        runningMain = false;
+      } else {
+        send(socket_fd, positionArray , 8, 0);
+      }
+
+      // Exit if ESC pressed.
+      int k = waitKey(1);
+      if(k == 27)
+      {
+        running = false;
+      }
+
+      //Timestamp 2 and FPS Calculation
+      endTime = high_resolution_clock::now();
+      time_span = endTime - beginTime;
     }
-
-    //Timestamp 2 and FPS Calculation
-    endTime = high_resolution_clock::now();
-    time_span = endTime - beginTime;
   }
+  close(socket_fd);
 
   exit(0);
 
@@ -545,46 +559,51 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   videoInfo->labelsize(25);
   videoInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
-  //Titel "Move Center"
-  Fl_Output *moveCenter = new Fl_Output(0, 6*(SCREEN_Y/10)-10, SCREEN_X/2, 1, "Move Center");
-  moveCenter->labelsize(25);
-  moveCenter->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
+  //Titel "More Information"
+  Fl_Output *moreInfo = new Fl_Output(0, 6*(SCREEN_Y/10)-10, SCREEN_X/2, 1, "More Information");
+  moreInfo->labelsize(25);
+  moreInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
-  Fl_Output *center_X = new Fl_Output(10, 1*(SCREEN_Y/10)+10, 100, 20, "Center (x) ");
+  Fl_Output *center_X = new Fl_Output(10, 1*(SCREEN_Y/10)+10, 150, 20, "Center (x) ");
   center_X->labelsize(15);
   center_X->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *center_Y = new Fl_Output(10, 1*(SCREEN_Y/10)+40, 100, 20, "Center (y) ");
+  Fl_Output *center_Y = new Fl_Output(10, 1*(SCREEN_Y/10)+40, 150, 20, "Center (y) ");
   center_Y->labelsize(15);
   center_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *SmoothingRation_X = new Fl_Output(10, 1*(SCREEN_Y/10)+70, 100, 20, "Smoothing Ration (x) ");
+  Fl_Output *SmoothingRation_X = new Fl_Output(10, 1*(SCREEN_Y/10)+70, 150, 20, "Smoothing Ration (x) ");
   SmoothingRation_X->labelsize(15);
   SmoothingRation_X->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *SmoothingRation_Y = new Fl_Output(10, 1*(SCREEN_Y/10)+100, 100, 20, "Smoothing Ration (y) ");
+  Fl_Output *SmoothingRation_Y = new Fl_Output(10, 1*(SCREEN_Y/10)+100, 150, 20, "Smoothing Ration (y) ");
   SmoothingRation_Y->labelsize(15);
   SmoothingRation_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *framesPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+10, 100, 20, "FPS ");
+  Fl_Output *framesPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+10, 150, 20, "FPS ");
   framesPerSecond->labelsize(15);
   framesPerSecond->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *msecondsPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+40, 100, 20, "Milliseconds per frame ");
+  Fl_Output *msecondsPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+40, 150, 20, "Milliseconds per frame ");
   msecondsPerSecond->labelsize(15);
   msecondsPerSecond->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *ScreenSize_X = new Fl_Output(10, 3*(SCREEN_Y/10)+100, 100, 20, "px Screensize (x) ");
+  Fl_Output *ScreenSize_X = new Fl_Output(10, 3*(SCREEN_Y/10)+100, 150, 20, "px Screensize (x) ");
   ScreenSize_X->labelsize(15);
   ScreenSize_X->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *ScreenSize_Y = new Fl_Output(10, 3*(SCREEN_Y/10)+130, 100, 20, "px Screensize (y) ");
+  Fl_Output *ScreenSize_Y = new Fl_Output(10, 3*(SCREEN_Y/10)+130, 150, 20, "px Screensize (y) ");
   ScreenSize_Y->labelsize(15);
   ScreenSize_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *trackerDisplay = new Fl_Output(10, 3*(SCREEN_Y/10)+160, 100, 20, "Chosen Tracker ");
+  Fl_Output *trackerDisplay = new Fl_Output(10, 3*(SCREEN_Y/10)+160, 150, 20, "Chosen Tracker ");
   trackerDisplay->labelsize(15);
   trackerDisplay->align(FL_ALIGN_RIGHT);
+
+  Fl_Output *ipDisplay = new Fl_Output(10, 6*(SCREEN_Y/10)+10, 150, 20, "Connected (IP Address) ");
+  ipDisplay->labelsize(15);
+  ipDisplay->align(FL_ALIGN_RIGHT);
+  ipDisplay->value(serverIP);
 
   Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Shut Down");
   shutdown->callback(b_SHUTDOWN,0);
@@ -609,7 +628,6 @@ string GetStdoutFromCommand(string cmd) {
   const int max_buffer = 256;
   char buffer[max_buffer];
 
-  cmd.append(" 2>&1");
   stream = popen(cmd.c_str(), "r");
 
   if (stream) {
