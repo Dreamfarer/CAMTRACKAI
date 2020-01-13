@@ -188,6 +188,9 @@ void TCPServer () {
 		//Write bytes to Dynamixel Motors
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
 	}
+	
+	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+	
 	return;
 }
 
