@@ -37,10 +37,31 @@ using namespace std;
 #define DEVICENAME                      "/dev/ttyUSB0"
 
 //OpenCV
-#define VIDEOSOURCE											0
+#define VIDEOSOURCE						0
 
 //Networking
 #define PORT                            4097
+#define SHUTDOWN						3001
+#define REBOOT							3002
+
+void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket int remoteSocket) {
+	
+	portHandler->closePort();
+	
+	close(localSocket);
+	close(remoteSocket);
+	
+	sleep(50);
+	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
+	sleep(50);
+	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, 0);
+	
+	if(argument == SHUTDOWN) {
+		system("shutdown -P now");
+	} else {
+		system("shutdown -r now");
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main Function
@@ -151,36 +172,22 @@ void TCPServer () {
 		send(remoteSocket, flippedFrame.data, imgSize, 0);
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]);
-
+		
+		//Receive motor parameters
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
-			std::cout << "FèèCK" << positionArray << std::endl;
+			std::cout << "Recv()\tERROR!" << std::endl;
+		} else {
+			std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
 		}
-
-		positionArray[0] = positionArray[0];
-		positionArray[1] = positionArray[1];
-
-		std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
-
+		
+		if(positionArray[0] == SHUTDOWN || positionArray[0] == REBOOT) {
+			
+			status = false;
+			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket);
+		}
 		//Write bytes to Dynamixel Motors
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
 	}
-
-	uint8_t receivedPackage;
-	uint16_t receivedError;
-
-	do {
-		packetHandler->read2ByteRx(portHandler, receivedPackage, &receivedError);
-		//Set Speed
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, 0);
-	} while(receivedError != 0);
-
-	// Close port
-	portHandler->closePort();
-
-	// close socket
-	close(remoteSocket);
-
 	return;
 }
 
