@@ -46,15 +46,19 @@ using namespace std;
 
 void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket, int remoteSocket) {
 
-	portHandler->closePort();
-
 	close(localSocket);
 	close(remoteSocket);
-
-	sleep(50);
+	
+	cout << "3 seconds remaining..." << endl;
+	sleep(1);
 	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
-	sleep(50);
+	cout << "2 seconds remaining..." << endl;
+	sleep(1);
 	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, 0);
+	cout << "1 second remaining..." << endl;
+	sleep(1);
+
+	portHandler->closePort();
 
 	if(argument == SHUTDOWN) {
 		system("shutdown -P now");
@@ -90,14 +94,13 @@ void TCPServer () {
 	//Setup/ prepare socket and check if it an error occurs.
 	if ((localSocket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
 		cout << "socket()\tERROR!" << endl;
-		return;
+		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	//Bind struct with socket and check if an error occurs.
 	if (bind(localSocket,(struct sockaddr *)&localAddr , sizeof(localAddr)) < 0) {
 		cout << "bind()\tERROR!" << endl;
-		close(localSocket);
-		return;
+		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	// Listening for an incoming connection
@@ -107,9 +110,7 @@ void TCPServer () {
 	while(status){
 		if ((remoteSocket = accept(localSocket, (struct sockaddr *)&remoteAddr, (socklen_t*)&addrLen)) < 0) {
 			cout << "accept()\tERROR" << endl;
-			close(localSocket);
-			close(remoteSocket);
-			return;
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 		} else {
 			status = false;
 		}
@@ -118,6 +119,7 @@ void TCPServer () {
 	//Check if the capturing devics is up
 	if (cap.isOpened() == false) {
 		cout << "Opening capturing device\tERROR!" << endl;
+		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	//Adjust the resolution of capture device
@@ -169,22 +171,26 @@ void TCPServer () {
 
 		// send the flipped frame over the network
 		std::cout << "Server send" << std::endl;
-		send(remoteSocket, flippedFrame.data, imgSize, 0);
+		if(send(remoteSocket, flippedFrame.data, imgSize, 0) == -1) {
+			std::cout << "send()\tERROR!" << std::endl;
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+		}
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]);
 
 		//Receive motor parameters
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
 			std::cout << "Recv()\tERROR!" << std::endl;
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 		} else {
 			std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
 		}
 
 		if(positionArray[0] == SHUTDOWN || positionArray[0] == REBOOT) {
-
 			status = false;
 			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket);
 		}
+
 		//Write bytes to Dynamixel Motors
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
 	}
