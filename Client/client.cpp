@@ -62,6 +62,9 @@ string ChosenTracker = "";
 Fl_Window *firstWindow = 0;
 Fl_Window *secondWindow = 0;
 
+bool shutdownActivated = false;
+bool rebootActivated = false;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining Properties
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +72,8 @@ Fl_Window *secondWindow = 0;
 #define SCREEN_Y                        1080
 
 #define PORT                            4097
+#define SHUTDOWN						3001
+#define REBOOT							3002
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
@@ -270,7 +275,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     recv(socket_fd, iptr, imgSize , MSG_WAITALL);
 
     std::cout << "Client Send" << std::endl;
-    send(socket_fd, (const char*)&my_net_id , 4, 0);
+    send(socket_fd, (const char*)&my_net_id , 8, 0);
 
     trackingBox = Rect2d(LButtonDown, LButtonHold);
     rectangle(img, trackingBox, colorPurple, 2, 8);
@@ -302,76 +307,95 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     //Timestamp 1
     beginTime = high_resolution_clock::now();
 
-    std::cout << "Client receive" << std::endl;
-    recv(socket_fd, iptr, imgSize , MSG_WAITALL);
+	if (recv(socket_fd, iptr, imgSize , MSG_WAITALL);) {
+		cout << "recv()\tERROR!" << endl;
+		
+		positionArray[0] = 0;
+		positionArray[1] = 0;
+		
+		send(socket_fd, positionArray , 8, 0);
+		close(socket_fd);
+		
+		running = false;
+		
+		exit(0);
+	}
+    
+    //Tracker searches for object in current frame. If it fails to find the object, this loop will send a 0 to the motors, indicating not to move.
+    if (tracker->update(img, trackingBox) == true) {
+		rectangle(img, trackingBox, colorPurple, 2, 8);
+	  
+		//Calucalte Position of Bounding Boxpthread_exit(NULL);
+		Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));
 
-    //Update Boundary Box
-    if (tracker->update(img, trackingBox)) {
-      rectangle(img, trackingBox, colorPurple, 2, 8);
-    }
+		//Update Points
+		Point_5 = Point_4;
+		Point_4 = Point_3;
+		Point_3 = Point_2;
+		Point_2 = Point_1;
+		Point_1 = Middle;
 
-    //Calucalte Position of Bounding Boxpthread_exit(NULL);
-    Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));
+		//Smooth out rectangle
+		smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
 
-    //Update Points
-    Point_5 = Point_4;
-    Point_4 = Point_3;
-    Point_3 = Point_2	;
-    Point_2 = Point_1;
-    Point_1 = Middle;
+		//Calls SmoothFollow Function
+		SmoothPrediction(img, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
 
-    //Smooth out rectangle
-    smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
+		//Handles whole GUI
+		GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
 
-    //Calls SmoothFollow Function
-    SmoothPrediction(img, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
+		Fl::check();
 
-    //Handles whole GUI
-    GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
+		imshow("CamTrackAI", img);
 
-    Fl::check();
+		//480/2 = 240
+		stepX = 1023 / (FrameInfo.x/2);
+		stepY = 1023 / (FrameInfo.y/2);
 
-    imshow("CamTrackAI", img);
+		differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
+		differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
 
-    //480/2 = 240
-    stepX = 1023 / (FrameInfo.x/2);
-    stepY = 1023 / (FrameInfo.y/2);
+		//Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
+		if(differnceToCenterX < 0) {
+		  moveMotorX = abs(differnceToCenterX) * stepX;
+		} else {
+		  moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
+		}
 
-    differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
-    differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
+		if(differnceToCenterY < 0) {
+		  moveMotorY = abs(differnceToCenterY) * stepY;
+		} else {
+		  moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
+		}
 
-    //Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
-    if(differnceToCenterX < 0) {
-      moveMotorX = abs(differnceToCenterX) * stepX;
+		positionArray[0] = moveMotorX;
+		positionArray[1] = moveMotorY;
     } else {
-      moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
-    }
+		positionArray[0] = 0;
+		positionArray[1] = 0;
+	}
 
-    if(differnceToCenterY < 0) {
-      moveMotorY = abs(differnceToCenterY) * stepY;
-    } else {
-      moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
-    }
-
-    positionArray[0] = moveMotorX;
-    positionArray[1] = moveMotorY;
-
-    send(socket_fd, positionArray , 8, 0);
-
-    //For ending the video early
-    if (waitKey(25) >= 0) {
-      running = false;
-      //Destroy all windows
-      destroyAllWindows();
-    }
+	if (shutdownActivated == true || rebootActivated == true) {
+		if (shutdownActivated) {
+			positionArray[0] = SHUTDOWN;
+		} else {
+			positionArray[0] = REBOOT;
+		}
+		send(socket_fd, positionArray , 8, 0);
+		close(socket_fd);
+		
+		running = false;
+	} else {
+		send(socket_fd, positionArray , 8, 0);
+	}
 
     //Timestamp 2 and FPS Calculation
     endTime = high_resolution_clock::now();
     time_span = endTime - beginTime;
   }
-
-  close(socket_fd);
-
+  
+  exit(0);
+  
   return 0;
 
 }
@@ -447,6 +471,16 @@ void b_RIGHT(Fl_Widget *, void *) {
   fl_beep();
 }
 
+void b_SHUTDOWN(Fl_Widget *, void *) {
+  fl_beep();
+  shutdownActivated = true;
+}
+
+void b_REBOOT(Fl_Widget *, void *) {
+  rebootActivated = true;
+  fl_beep();
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //First Page. Here the user will choose which Tracker to use.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -481,12 +515,11 @@ int FirstWindow(int argc, char **argv) {
   Fl_Button *medianflow = new Fl_Button(2*(SCREEN_X/8), 2*(SCREEN_Y/10), SCREEN_X/15, SCREEN_Y/15, "Medianflow");
   medianflow->callback(b_MEDIANFLOW,0);
 
-  Fl_Button *b3 = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Quit");
-  b3->callback(b_Exit,0);
+  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Shut Down");
+  shutdown->callback(b_SHUTDOWN,0);
 
-  Fl_Button *next = new Fl_Button(SCREEN_X/2-SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Next");
-  //next->label("@+92->");
-  next->callback(b_Next,0);
+  Fl_Button *reboot = new Fl_Button(SCREEN_X/15 + 20,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Reboot");
+  reboot->callback(b_REBOOT,0);
 
   firstWindow->end();
   firstWindow->show(argc,argv);
@@ -556,11 +589,11 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   trackerDisplay->labelsize(15);
   trackerDisplay->align(FL_ALIGN_RIGHT);
 
-  Fl_Button *b3 = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Quit");
-  b3->callback(b_Exit,0);
+  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Shut Down");
+  shutdown->callback(b_SHUTDOWN,0);
 
-  Fl_Button *next = new Fl_Button(SCREEN_X/2-SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Next");
-  next->callback(b_Next,0);
+  Fl_Button *reboot = new Fl_Button(SCREEN_X/15 + 20,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Reboot");
+  reboot->callback(b_REBOOT,0);
 
   secondWindow->end();
   secondWindow->show(argc,argv);
@@ -571,7 +604,6 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
 
 }
 
-//https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/
 string GetStdoutFromCommand(string cmd) {
 
   string data;
