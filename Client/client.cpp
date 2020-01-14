@@ -208,9 +208,13 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   int stepY; //How big the steps are for motor movement in y direction (that it is 0 movement in the center and 100% movement at border of screen)
   int differnceToCenterX; //Difference from tracker's x center to screen's x center
   int differnceToCenterY; //Difference from tracker's y center to screen's y center
+  int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
+  int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
+  int socket_fd; //Socket
+  int serverPort = PORT; //Port over which connection goes
+  
   bool runningMain = true; //For exiting the main while loop
   bool running = true; //For exiting the "tracker update" while loop
-  int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
 
   duration<double, milli> time_span; //Timeintervall to calculate 'msecondsPerSecond' and 'fps'
   high_resolution_clock::time_point beginTime = high_resolution_clock::now(); //Start of counter
@@ -222,29 +226,24 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   Point Point_4 = Point(4, 6); //-
   Point Point_5 = Point(5, 5); //-
   Point Middle = Point(1,1); //Newest frame
-
-  int socket_fd; //Socket
-  int serverPort = PORT; //Port over which connection goes
+  Point FrameInfo = Point(480, 300); //Point (x,y) which holds image resolution
 
   struct sockaddr_in serverAddr; //Struct that holds IP Adress/Port/Family
   socklen_t addrLen = sizeof(struct sockaddr_in); //Calculate size which is reserved for 'serverAddr'
   
-    Mat img;
-  img = Mat::zeros(300 , 480, CV_8UC3);
-  int imgSize = img.total() * img.elemSize();
-  uchar *iptr = img.data;
+  Mat img; //holds image (frame)
+  img = Mat::zeros(300 , 480, CV_8UC3); //Fill in image (frame) with 0
+  int imgSize = img.total() * img.elemSize(); //Image (frame) size
+  uchar *iptr = img.data; //Pointer to image (frame) for it to be used with TCP/IP
 
-  Point FrameInfo = Point(480, 300);
-  
-   namedWindow("CamTrackAI", WINDOW_NORMAL);
+  namedWindow("CamTrackAI", WINDOW_NORMAL); //Create an OpenCV window
    
-    //set the callback function for any mouse event
-  setMouseCallback("CamTrackAI", CallBackFunc, NULL);
+  setMouseCallback("CamTrackAI", CallBackFunc, NULL); //Set a callback function for mouse events
   
-    Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0));
-  int ExitWhile = 0;
-  int my_id = 1234;
-  int my_net_id = htonl(my_id);
+  Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0)); //Box which is drawn by the user for selecting the ROI (Region of interest)
+  int ExitWhile = 0; //Exit a while loop
+  
+  bool trackerError; //Returning value by tracker->update()
 
   //Initiate Socket
   if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -260,15 +259,13 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   if (connect(socket_fd, (sockaddr*)&serverAddr, addrLen) < 0) {
     cout << "connect()\tERROR!" << endl;
   }
-  
-  	bool trackerError;
 
   while (runningMain) {
-
+	//Fill with 0 so that motors won't move
     positionArray[0] = 0;
     positionArray[1] = 0;
 
-    //Choose Tracker and Start It
+    //Evaluate decision by user and define type of tracker to be used. If there was an error, Reboot instructions will be sent to the Raspberry Pi and the application will shut down.
     Ptr<Tracker> tracker;
     if (ChosenTracker == "KCF") {
       tracker = TrackerKCF::create();
@@ -286,81 +283,84 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       tracker = TrackerMedianFlow::create();
     } else {
       cout << "Error chosing tracker" << endl;
-      exit(0);
+	  positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+	  positionArray[1] = 0; //Set the motor to 0 movement
+	  send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
+      
+      close(socket_fd); //Close socket
+
+      exit(0); //Exit application
     }
 	
+    //Choose what object to track (ROI). Exits if 'y' (Key Number 121) or the button 'b_COMMIT' has been pressed.
 	yPressed == false;
-
-    //Choose what object to track
     while (ExitWhile != 121 || yPressed == true) {
-      recv(socket_fd, iptr, imgSize , MSG_WAITALL);
+      recv(socket_fd, iptr, imgSize , MSG_WAITALL); //Receive image from Raspberyy Pi and store it into 'img' (iptr)
 
-      send(socket_fd, positionArray , 8, 0);
+      send(socket_fd, positionArray , 8, 0); //Send movement instructions to motors
 
-      trackingBox = Rect2d(LButtonDown, LButtonHold);
-      rectangle(img, trackingBox, colorPurple, 2, 8);
+      trackingBox = Rect2d(LButtonDown, LButtonHold); //Update rectangle which is drawn with the user's mouse
+      rectangle(img, trackingBox, colorPurple, 2, 8); //Make the drawn box visible
 
-      imshow("CamTrackAI", img);
+      imshow("CamTrackAI", img); //Show image with 'img' and the rectangle on a higher layer
 
-      ExitWhile = waitKey(25);
+      ExitWhile = waitKey(25); //Wait 25ms for 'y' key to be pressed. 'ExitWhile' will change to 121 if key was pressed and initiates exit of the loop.
     }
 
-    ExitWhile = 0;
+    ExitWhile = 0; //Reset for it to be used in another loop
 
-    tracker->init(img, trackingBox);
+    tracker->init(img, trackingBox); //Initalize tracker with the user's defined box
 
-    running = true;
-	escPressed = false;
+    running = true; //Reset for it to be used in another loop
+	escPressed = false; //Reset for it to be used again in the loop
 
     while (running) {
-      //Timestamp 1
-      beginTime = high_resolution_clock::now();
+      
+      beginTime = high_resolution_clock::now(); //Begin timer
 
+	  //Receive image from Raspberyy Pi and store it into 'img' (iptr). If there was an error, send Reboot instruction to Raspberry Pi and close the application
       if (recv(socket_fd, iptr, imgSize , MSG_WAITALL) == -1) {
         cout << "recv()\tERROR!" << endl;
+		
+		positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+		positionArray[1] = 0; //Set the motor to 0 movement
+		send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
+      
+		close(socket_fd); //Close socket
+	  
+	    running = false; //Prevent loop from running again
 
-        positionArray[0] = 0;
-        positionArray[1] = 0;
-
-        send(socket_fd, positionArray , 8, 0);
-        close(socket_fd);
-
-        running = false;
-
-        exit(0);
+		exit(0); //Exit application
       }
 
-      //Tracker searches for object in current frame. If it fails to find the object, this loop will send a 0 to the motors, indicating not to move.
+      //The tracker searches for the object in the current frame. If it fails, it will send 0 (zero movement for motors) to the Raspberry Pi until the object is found again.
       if (trackerError = tracker->update(img, trackingBox) == true) {
-        rectangle(img, trackingBox, colorPurple, 2, 8);
+        rectangle(img, trackingBox, colorPurple, 2, 8); //Make trackerdata visible through a rectangle
 
-        //Calucalte Position of Bounding Boxpthread_exit(NULL);
-        Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));
+        Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));   //Calucalte center of tracker
 
-        //Update Points
+        //Update Points (from oldest frame to newest frame)
         Point_5 = Point_4;
         Point_4 = Point_3;
         Point_3 = Point_2;
         Point_2 = Point_1;
         Point_1 = Middle;
 
-        //Smooth out rectangle
         smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
 
-        Fl::check();
+        Fl::check(); //Refresh GUI
 
+        imshow("CamTrackAI", img); //Show image (frame) with the rectangle (tracker data) on a higher layer
 
-        imshow("CamTrackAI", img);
-
-
-        //480/2 = 240
+		//Calculate the steps based on the image's resolution and maximal movement by the Dynamixel motors.
         stepX = 1023 / (FrameInfo.x/2);
         stepY = 1023 / (FrameInfo.y/2);
-
+		
+		//Calucalte difference from tracker's x center to screen's x center 
         differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
         differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
 
-        //Checks if the difference from the center is + or minus 0. If < 0 send a number ranging from 0-1023 to the motor. If false, send numbers ranging from 1024-2047. Used to determine the direction.
+        //Checks if the difference from the center is + or minus 0. If it is < 0, it will send a number ranging from 0-1023 to the Raspberry Pi. If false, it will send numbers ranging from 1024-2047. This is used to define the direction.
         if(differnceToCenterX < 0) {
           moveMotorX = abs(differnceToCenterX) * stepX;
         } else {
@@ -372,7 +372,8 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
         } else {
           moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
         }
-
+		
+		//Set movement instruction for the motors
         positionArray[0] = moveMotorX;
         positionArray[1] = moveMotorY;
       } else {
@@ -380,9 +381,10 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
         positionArray[1] = 0;
       }
 	  
-	  //Handles whole GUI
+	  //Write values into the GUI
       GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter, errorDisplay, trackerError);
 
+	  // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
       if (shutdownActivated == true || rebootActivated == true) {
         if (shutdownActivated) {
           positionArray[0] = SHUTDOWN;
@@ -397,21 +399,21 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
         send(socket_fd, positionArray , 8, 0);
       }
 
-      // Exit if ESC pressed.
+      // Exit the loop if the 'esc' key was pressed.
       int k = waitKey(1);
       if(k == 27 || escPressed == true)
       {
         running = false;
       }
 	  
-      //Timestamp 2 and FPS Calculation
+      //Timestamp 2 and time span calulating
       endTime = high_resolution_clock::now();
       time_span = endTime - beginTime;
     }
   }
-  close(socket_fd);
+  close(socket_fd); //Close socket
 
-  exit(0);
+  exit(0); //Exit application
 
   return 0;
 
