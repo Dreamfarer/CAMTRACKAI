@@ -200,8 +200,10 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSeco
 void Shutdown(int socket, int positionArray[2]) {
     if (rebootActivated) {
       positionArray[0] = REBOOT;
+      cout << "\n\n=====================================================================================\nRebooting Raspberry Pi ...\n=====================================================================================\n\n" << endl;
     } else {
       positionArray[0] = SHUTDOWN; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+      cout << "\n\n=====================================================================================\nShutting down Raspberry Pi ...\n=====================================================================================\n\n" << endl;
     }
     positionArray[1] = 0; //Set the motor to 0 movement
 
@@ -306,7 +308,6 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
     } else if (ChosenTracker == "MedianFlow") {
       tracker = TrackerMedianFlow::create();
     } else {
-      cout << "Error chosing tracker" << endl;
       rebootActivated = true;
       Shutdown(socket_fd, positionArray);
     }
@@ -351,16 +352,8 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       //Receive image from Raspberyy Pi and store it into 'img' (iptr). If there was an error, send Reboot instruction to Raspberry Pi and close the application
       if (recv(socket_fd, iptr, imgSize , MSG_WAITALL) == -1) {
         cout << "recv()\tERROR!" << endl;
-
-        positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
-        positionArray[1] = 0; //Set the motor to 0 movement
-        send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
-
-        close(socket_fd); //Close socket
-
-        running = false; //Prevent loop from running again
-
-        exit(0); //Exit application
+        rebootActivated = true;
+        Shutdown(socket_fd, positionArray);
       }
 
       //The tracker searches for the object in the current frame. If it fails, it will send 0 (zero movement for motors) to the Raspberry Pi until the object is found again.
@@ -506,13 +499,15 @@ void b_MEDIANFLOW(Fl_Widget *, void *) {
 //Activate shutdown
 void b_SHUTDOWN(Fl_Widget *, void *) {
   fl_beep();
+  firstWindow->hide();
   shutdownActivated = true;
 }
 
 //Activate reboot
 void b_REBOOT(Fl_Widget *, void *) {
-  rebootActivated = true;
   fl_beep();
+  rebootActivated = true;
+  firstWindow->hide();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
