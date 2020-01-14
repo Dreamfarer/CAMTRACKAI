@@ -65,6 +65,9 @@ Fl_Window *secondWindow = 0;
 bool shutdownActivated = false;
 bool rebootActivated = false;
 
+bool escPressed = false;
+bool yPressed = false;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining Properties
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,20 +162,26 @@ Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, P
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Function for handling the whole GUI
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker, Point smoothedCenter) {
-  double FPS = 1000/PictureTime;
+void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker, Point smoothedCenter, FL_Output*errorDisplay, bool trackerError) {
+  int FPS = 1000/PictureTime;
+  string errorString;
 
-  center_X->value(to_string(Middle.x).c_str());
-  center_Y->value(to_string(Middle.y).c_str());
-
-  SmoothingRation_X->value(to_string(smoothedCenter.x).c_str());
-  SmoothingRation_Y->value(to_string(smoothedCenter.y).c_str());
+  center_X->value(to_string(smoothedCenter.x).c_str());
+  center_Y->value(to_string(smoothedCenter.y).c_str());
 
   framesPerSecond->value(to_string(FPS).c_str());
   msecondsPerSecond->value(to_string(PictureTime).c_str());
 
   ScreenSize_X->value(to_string(FrameInfo.x).c_str());
   ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
+  
+	if(trackerError) {
+		errorString = "ERROR";
+	} else {
+		errorString = "SUCCESS";
+	}
+  
+  errorDisplay->value(errorString.c_str());
 
   trackerDisplay->value(Tracker.c_str());
 }
@@ -180,7 +189,7 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRati
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main function 2
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*SmoothingRation_X, Fl_Output*SmoothingRation_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP) {
+int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP, FL_Output*errorDisplay) {
 
   Point prediction;
   Point smoothedCenter;
@@ -282,9 +291,12 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
       cout << "Error chosing tracker" << endl;
       exit(0);
     }
+	
+	bool trackerError;
+	yPressed == false;
 
     //Choose what object to track
-    while (ExitWhile != 121) {
+    while (ExitWhile != 121 || yPressed == true) {
       recv(socket_fd, iptr, imgSize , MSG_WAITALL);
 
       send(socket_fd, positionArray , 8, 0);
@@ -302,6 +314,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
     tracker->init(img, trackingBox);
 
     running = true;
+	escPressed = false;
 
     while (running) {
       //Timestamp 1
@@ -322,7 +335,7 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
       }
 
       //Tracker searches for object in current frame. If it fails to find the object, this loop will send a 0 to the motors, indicating not to move.
-      if (tracker->update(img, trackingBox) == true) {
+      if (trackerError = tracker->update(img, trackingBox) == true) {
         rectangle(img, trackingBox, colorPurple, 2, 8);
 
         //Calucalte Position of Bounding Boxpthread_exit(NULL);
@@ -337,12 +350,6 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
         //Smooth out rectangle
         smoothedCenter = SmoothFrame(img, Point_1, Point_2, Point_3, Point_4, Point_5);
-
-        //Calls SmoothFollow Function
-        SmoothPrediction(img, Middle, Point_1, Point_2, Point_3, Point_4, Point_5);
-
-        //Handles whole GUI
-        GUISetting(center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter);
 
         Fl::check();
 
@@ -376,6 +383,9 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
         positionArray[0] = 0;
         positionArray[1] = 0;
       }
+	  
+	  //Handles whole GUI
+      GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter, errorDisplay, trackerError);
 
       if (shutdownActivated == true || rebootActivated == true) {
         if (shutdownActivated) {
@@ -393,11 +403,11 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
 
       // Exit if ESC pressed.
       int k = waitKey(1);
-      if(k == 27)
+      if(k == 27 || escPressed == true)
       {
         running = false;
       }
-
+	  
       //Timestamp 2 and FPS Calculation
       endTime = high_resolution_clock::now();
       time_span = endTime - beginTime;
@@ -492,6 +502,16 @@ void b_REBOOT(Fl_Widget *, void *) {
   fl_beep();
 }
 
+void b_END(Fl_Widget *, void *) {
+  escPressed = true;
+  fl_beep();
+}
+
+void b_COMMIT(Fl_Widget *, void *) {
+  yPressed = true;
+  fl_beep();
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //First Page. Here the user will choose which Tracker to use.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -505,7 +525,6 @@ int FirstWindow(int argc, char **argv) {
   out1->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
   Fl_Button *kcf = new Fl_Button(0, 1*(SCREEN_Y/10), SCREEN_X/15, SCREEN_Y/15, "KCF");
-  //b1->callback(b_CSRT,out1);
   kcf->callback(b_KCF,0);
 
   Fl_Button *csrt = new Fl_Button(1*(SCREEN_X/8), 1*(SCREEN_Y/10), SCREEN_X/15, SCREEN_Y/15, "CSRT");
@@ -572,14 +591,6 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   center_Y->labelsize(15);
   center_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *SmoothingRation_X = new Fl_Output(10, 1*(SCREEN_Y/10)+70, 150, 20, "Smoothing Ration (x) ");
-  SmoothingRation_X->labelsize(15);
-  SmoothingRation_X->align(FL_ALIGN_RIGHT);
-
-  Fl_Output *SmoothingRation_Y = new Fl_Output(10, 1*(SCREEN_Y/10)+100, 150, 20, "Smoothing Ration (y) ");
-  SmoothingRation_Y->labelsize(15);
-  SmoothingRation_Y->align(FL_ALIGN_RIGHT);
-
   Fl_Output *framesPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+10, 150, 20, "FPS ");
   framesPerSecond->labelsize(15);
   framesPerSecond->align(FL_ALIGN_RIGHT);
@@ -604,17 +615,27 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   ipDisplay->labelsize(15);
   ipDisplay->align(FL_ALIGN_RIGHT);
   ipDisplay->value(serverIP);
+  
+  Fl_Output *errorDisplay = new Fl_Output(10, 6*(SCREEN_Y/10)+40, 150, 20, "Tracker Status ");
+  errorDisplay->labelsize(15);
+  errorDisplay->align(FL_ALIGN_RIGHT);
 
-  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Shut Down");
+  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Quit");
   shutdown->callback(b_SHUTDOWN,0);
 
-  Fl_Button *reboot = new Fl_Button(SCREEN_X/15 + 20,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Reboot");
+  Fl_Button *reboot = new Fl_Button(1*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Restart");
   reboot->callback(b_REBOOT,0);
+  
+  Fl_Button *endTracker = new Fl_Button(2*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "End Tracker (ESC-Key)");
+  endTracker->callback(b_END,0);
+  
+  Fl_Button *commitTracker = new Fl_Button(3*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Start Tracker (Y-Key)");
+  commitTracker->callback(b_COMMIT,0);
 
   secondWindow->end();
   secondWindow->show(argc,argv);
 
-  thread threadObj(TrackerMain, trackerInfo, videoInfo, center_X, center_Y, SmoothingRation_X, SmoothingRation_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP);
+  thread threadObj(TrackerMain, trackerInfo, videoInfo, center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP, errorDisplay);
 
   return Fl::run();
 
