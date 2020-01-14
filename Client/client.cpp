@@ -1,4 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// **CAMTRACKAI**
+//
+// Coded by BE3dARt with <3
+//
+// Visit https://github.com/BE3dARt/CamTrackAI for the documentation/ installing instructions and legal notice
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 //Include header files
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <iostream>
@@ -420,98 +428,86 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Buttons for GUI
+// Buttons for the GUI
+// @FL_Widget	Target widget
+// @*			Data that can be stored in a Widget with fltk::Widget::user_data(void*)
+// -> 			Description taken from https://www.fltk.org/doc-2.0/html/group__example2.html
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void b_Exit(Fl_Widget *, void *) {
-  fl_beep();
-  exit(0);
-}
-
-void b_Next(Fl_Widget *, void *) {
-  fl_beep();
-  firstWindow->hide();
-}
-
+//Choose KCF
 void b_KCF(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "KCF";
   firstWindow->hide();
 }
 
+//Choose CSRT
 void b_CSRT(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "CSRT";
   firstWindow->hide();
 }
 
+//Choose TLD
 void b_TLD(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "TLD";
   firstWindow->hide();
 }
 
+//Choose MIL
 void b_MIL(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "MIL";
   firstWindow->hide();
 }
 
+//Choose MOSSE
 void b_MOSSE(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "MOSSE";
   firstWindow->hide();
 }
 
+//Choose BOOSTING
 void b_BOOSTING(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "Boosting";
   firstWindow->hide();
 }
 
+//Choose MedianFlow
 void b_MEDIANFLOW(Fl_Widget *, void *) {
   fl_beep();
   ChosenTracker = "MedianFlow";
   firstWindow->hide();
 }
 
-void b_UP(Fl_Widget *, void *) {
-  fl_beep();
-}
-
-void b_DOWN(Fl_Widget *, void *) {
-  fl_beep();
-}
-
-void b_LEFT(Fl_Widget *, void *) {
-  fl_beep();
-}
-
-void b_RIGHT(Fl_Widget *, void *) {
-  fl_beep();
-}
-
+//Activate shutdown
 void b_SHUTDOWN(Fl_Widget *, void *) {
   fl_beep();
   shutdownActivated = true;
 }
 
+//Activate reboot
 void b_REBOOT(Fl_Widget *, void *) {
   rebootActivated = true;
   fl_beep();
 }
 
+//Activate end of tracking ('ESC-Key')
 void b_END(Fl_Widget *, void *) {
   escPressed = true;
   fl_beep();
 }
 
+//Start tracking ('Y-Key')
 void b_COMMIT(Fl_Widget *, void *) {
   yPressed = true;
   fl_beep();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//First Page. Here the user will choose which Tracker to use.
+//First GUI page. The user will choose a tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int FirstWindow(int argc, char **argv) {
 
@@ -639,6 +635,10 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Function to read output from a console command
+// @
+////////////////////////////////////////////////////////////////////////////////////////////////////
 string GetStdoutFromCommand(string cmd) {
 
   string data;
