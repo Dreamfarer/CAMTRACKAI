@@ -74,8 +74,6 @@ bool shutdownActivated = false;
 bool rebootActivated = false;
 
 //Key and mouse events
-bool escPressed = false;
-bool yPressed = false;
 bool MouseClicked = false;
 
 Point LButtonDown = Point(0, 0);
@@ -90,6 +88,11 @@ Point LButtonHold = Point(0, 0);
 #define PORT                            4097
 #define SHUTDOWN						3001
 #define REBOOT							3002
+
+#define KEY_START           113
+#define KEY_END             119
+#define KEY_REBOOT          114
+#define KEY_SHUTDOWN        102
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
@@ -173,16 +176,16 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
 // @errorDisplay			Pointer to GUI element which displays if there is an error with the tracker
 // @trackerError			True if there is an error with the tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker, Point smoothedCenter, FL_Output*errorDisplay, bool trackerError) {
+void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Point Middle, Point FrameInfo, double PictureTime, Point smoothedCenter, Fl_Output *errorDisplay, bool trackerError) {
   int FPS = 1000/PictureTime;  //Frames per second for calculation of one frame
-  
+
   //What to display if there is an error with the tracker
   string errorString;
   if(trackerError) {
-		errorString = "ERROR";
-	} else {
-		errorString = "SUCCESS";
-	}
+    errorString = "SUCCESS";
+  } else {
+    errorString = "ERROR";
+  }
 
   //Write values to GUI elements
   center_X->value(to_string(smoothedCenter.x).c_str());
@@ -192,7 +195,21 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSeco
   ScreenSize_X->value(to_string(FrameInfo.x).c_str());
   ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
   errorDisplay->value(errorString.c_str());
-  trackerDisplay->value(Tracker.c_str());
+}
+
+void Shutdown(int socket, int positionArray[2]) {
+    if (rebootActivated) {
+      positionArray[0] = REBOOT;
+    } else {
+      positionArray[0] = SHUTDOWN; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+    }
+    positionArray[1] = 0; //Set the motor to 0 movement
+
+    send(socket, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
+
+    close(socket); //Close socket
+
+    exit(0); //Exit application
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +224,7 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSeco
 // @serverIP				Pointer to IP Address
 // @errorDisplay			Pointer to GUI element which displays if there is an error with the tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP, FL_Output*errorDisplay) {
+int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*errorDisplay, const char* serverIP) {
 
   Point smoothedCenter; //Point (x,y) to store the smoothed out center of tracker
   int moveMotorX; //How fast to move motors in x direction
@@ -217,17 +234,16 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   int differnceToCenterX; //Difference from tracker's x center to screen's x center
   int differnceToCenterY; //Difference from tracker's y center to screen's y center
   int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
-  int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
   int socket_fd; //Socket
   int serverPort = PORT; //Port over which connection goes
-  
+
   bool runningMain = true; //For exiting the main while loop
   bool running = true; //For exiting the "tracker update" while loop
 
   duration<double, milli> time_span; //Timeintervall to calculate 'msecondsPerSecond' and 'fps'
   high_resolution_clock::time_point beginTime = high_resolution_clock::now(); //Start of counter
   high_resolution_clock::time_point endTime = high_resolution_clock::now(); //Start of counter
-  
+
   Point Point_1 = Point(1, 9); //Oldest frame
   Point Point_2 = Point(2, 8); //-
   Point Point_3 = Point(3, 7); //-
@@ -238,26 +254,26 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 
   struct sockaddr_in serverAddr; //Struct that holds IP Adress/Port/Family
   socklen_t addrLen = sizeof(struct sockaddr_in); //Calculate size which is reserved for 'serverAddr'
-  
+
   Mat img; //holds image (frame)
   img = Mat::zeros(300 , 480, CV_8UC3); //Fill in image (frame) with 0
   int imgSize = img.total() * img.elemSize(); //Image (frame) size
   uchar *iptr = img.data; //Pointer to image (frame) for it to be used with TCP/IP
 
   namedWindow("CamTrackAI", WINDOW_NORMAL); //Create an OpenCV window
-   
+
   setMouseCallback("CamTrackAI", CallBackFunc, NULL); //Set a callback function for mouse events
-  
+
   Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0)); //Box which is drawn by the user for selecting the ROI (Region of interest)
   int ExitWhile = 0; //Exit a while loop
-  
+
   bool trackerError; //Returning value by tracker->update()
 
   //Initiate Socket
   if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     cout << "socket()\tERROR!" << endl;
   }
-	
+
   //Fill in struct 'serverAddr'
   serverAddr.sin_family = PF_INET; //Family
   serverAddr.sin_addr.s_addr = inet_addr(serverIP); //IP Address
@@ -269,7 +285,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   }
 
   while (runningMain) {
-	//Fill with 0 so that motors won't move
+    //Fill with 0 so that motors won't move
     positionArray[0] = 0;
     positionArray[1] = 0;
 
@@ -291,28 +307,35 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       tracker = TrackerMedianFlow::create();
     } else {
       cout << "Error chosing tracker" << endl;
-	  positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
-	  positionArray[1] = 0; //Set the motor to 0 movement
-	  send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
-      
-      close(socket_fd); //Close socket
-
-      exit(0); //Exit application
+      rebootActivated = true;
+      Shutdown(socket_fd, positionArray);
     }
-	
-    //Choose what object to track (ROI). Exits if 'y' (Key Number 121) or the button 'b_COMMIT' has been pressed.
-	yPressed == false;
-    while (ExitWhile != 121 || yPressed == true) {
-      recv(socket_fd, iptr, imgSize , MSG_WAITALL); //Receive image from Raspberyy Pi and store it into 'img' (iptr)
 
-      send(socket_fd, positionArray , 8, 0); //Send movement instructions to motors
+    //Choose what object to track (ROI). Exits if 'y' (Key Number 121) or the button 'b_COMMIT' has been pressed.
+    while (ExitWhile != KEY_START) {
+      recv(socket_fd, iptr, imgSize , MSG_WAITALL); //Receive image from Raspberyy Pi and store it into 'img' (iptr)
 
       trackingBox = Rect2d(LButtonDown, LButtonHold); //Update rectangle which is drawn with the user's mouse
       rectangle(img, trackingBox, colorPurple, 2, 8); //Make the drawn box visible
 
       imshow("CamTrackAI", img); //Show image with 'img' and the rectangle on a higher layer
 
-      ExitWhile = waitKey(25); //Wait 25ms for 'y' key to be pressed. 'ExitWhile' will change to 121 if key was pressed and initiates exit of the loop.
+      ExitWhile = waitKey(20); //Wait 25ms for 'e' key to be pressed. 'ExitWhile' will change to 121 if key was pressed and initiates exit of the loop.
+
+      if (ExitWhile == KEY_REBOOT) {
+        rebootActivated = true;
+      }
+
+      if (ExitWhile == KEY_SHUTDOWN) {
+        shutdownActivated = true;
+      }
+
+      if (shutdownActivated == true || rebootActivated == true) {
+        ExitWhile = KEY_START;
+        Shutdown(socket_fd, positionArray);
+      } else {
+        send(socket_fd, positionArray , 8, 0); //Send movement instructions to motors
+      }
     }
 
     ExitWhile = 0; //Reset for it to be used in another loop
@@ -320,29 +343,28 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
     tracker->init(img, trackingBox); //Initalize tracker with the user's defined box
 
     running = true; //Reset for it to be used in another loop
-	escPressed = false; //Reset for it to be used again in the loop
 
     while (running) {
-      
+
       beginTime = high_resolution_clock::now(); //Begin timer
 
-	  //Receive image from Raspberyy Pi and store it into 'img' (iptr). If there was an error, send Reboot instruction to Raspberry Pi and close the application
+      //Receive image from Raspberyy Pi and store it into 'img' (iptr). If there was an error, send Reboot instruction to Raspberry Pi and close the application
       if (recv(socket_fd, iptr, imgSize , MSG_WAITALL) == -1) {
         cout << "recv()\tERROR!" << endl;
-		
-		positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
-		positionArray[1] = 0; //Set the motor to 0 movement
-		send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
-      
-		close(socket_fd); //Close socket
-	  
-	    running = false; //Prevent loop from running again
 
-		exit(0); //Exit application
+        positionArray[0] = REBOOT; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+        positionArray[1] = 0; //Set the motor to 0 movement
+        send(socket_fd, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
+
+        close(socket_fd); //Close socket
+
+        running = false; //Prevent loop from running again
+
+        exit(0); //Exit application
       }
 
       //The tracker searches for the object in the current frame. If it fails, it will send 0 (zero movement for motors) to the Raspberry Pi until the object is found again.
-      if (trackerError = tracker->update(img, trackingBox) == true) {
+      if ((trackerError = tracker->update(img, trackingBox)) == true) {
         rectangle(img, trackingBox, colorPurple, 2, 8); //Make trackerdata visible through a rectangle
 
         Middle = Point((trackingBox.x + trackingBox.width / 2),(trackingBox.y + trackingBox.height / 2));   //Calucalte center of tracker
@@ -360,11 +382,11 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 
         imshow("CamTrackAI", img); //Show image (frame) with the rectangle (tracker data) on a higher layer
 
-		//Calculate the steps based on the image's resolution and maximal movement by the Dynamixel motors.
+        //Calculate the steps based on the image's resolution and maximal movement by the Dynamixel motors.
         stepX = 1023 / (FrameInfo.x/2);
         stepY = 1023 / (FrameInfo.y/2);
-		
-		//Calucalte difference from tracker's x center to screen's x center 
+
+        //Calucalte difference from tracker's x center to screen's x center
         differnceToCenterX = smoothedCenter.x - (FrameInfo.x/2);
         differnceToCenterY = smoothedCenter.y - (FrameInfo.y/2);
 
@@ -380,40 +402,39 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
         } else {
           moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
         }
-		
-		//Set movement instruction for the motors
+
+        //Set movement instruction for the motors
         positionArray[0] = moveMotorX;
         positionArray[1] = moveMotorY;
       } else {
         positionArray[0] = 0;
         positionArray[1] = 0;
       }
-	  
-	  //Write values into the GUI
-      GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, Middle, FrameInfo, time_span.count(), ChosenTracker, smoothedCenter, errorDisplay, trackerError);
 
-	  // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
-      if (shutdownActivated == true || rebootActivated == true) {
-        if (shutdownActivated) {
-          positionArray[0] = SHUTDOWN;
-        } else {
-          positionArray[0] = REBOOT;
-        }
-        send(socket_fd, positionArray , 8, 0);
-
+      // Exit the loop if the 'esc' key was pressed.
+      int k = waitKey(1);
+      if(k == KEY_END)
+      {
         running = false;
-        runningMain = false;
+      }
+
+      if (k == KEY_REBOOT) {
+        rebootActivated = true;
+      }
+
+      if (k == KEY_SHUTDOWN) {
+        shutdownActivated = true;
+      }
+
+      //Write values into the GUI
+      GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, Middle, FrameInfo, time_span.count(), smoothedCenter, errorDisplay, trackerError);
+      // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
+      if (shutdownActivated == true || rebootActivated == true) {
+        Shutdown(socket_fd, positionArray);
       } else {
         send(socket_fd, positionArray , 8, 0);
       }
 
-      // Exit the loop if the 'esc' key was pressed.
-      int k = waitKey(1);
-      if(k == 27 || escPressed == true)
-      {
-        running = false;
-      }
-	  
       //Timestamp 2 and time span calulating
       endTime = high_resolution_clock::now();
       time_span = endTime - beginTime;
@@ -494,18 +515,6 @@ void b_REBOOT(Fl_Widget *, void *) {
   fl_beep();
 }
 
-//Activate end of tracking ('ESC-Key')
-void b_END(Fl_Widget *, void *) {
-  escPressed = true;
-  fl_beep();
-}
-
-//Start tracking ('Y-Key')
-void b_COMMIT(Fl_Widget *, void *) {
-  yPressed = true;
-  fl_beep();
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //First GUI page. The user will choose a tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -562,20 +571,10 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   secondWindow = new Fl_Window(0,0,SCREEN_X/2,SCREEN_Y);
   secondWindow->resizable(secondWindow);
 
-  //Titel "Tracker Information"
-  Fl_Output *trackerInfo = new Fl_Output(0, 1*(SCREEN_Y/10)-10, SCREEN_X/2, 1, "Tracker Information");
+  //Group with Titel "Tracker Information"
+  Fl_Output *trackerInfo = new Fl_Output(0, 1*(SCREEN_Y/10)-10, SCREEN_X/2, 2, "Tracker Information");
   trackerInfo->labelsize(25);
   trackerInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
-
-  //Titel "Video Information"
-  Fl_Output *videoInfo = new Fl_Output(0, 3*(SCREEN_Y/10)-10, SCREEN_X/2, 1, "Video Information");
-  videoInfo->labelsize(25);
-  videoInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
-
-  //Titel "More Information"
-  Fl_Output *moreInfo = new Fl_Output(0, 6*(SCREEN_Y/10)-10, SCREEN_X/2, 1, "More Information");
-  moreInfo->labelsize(25);
-  moreInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
   Fl_Output *center_X = new Fl_Output(10, 1*(SCREEN_Y/10)+10, 150, 20, "Center (x) ");
   center_X->labelsize(15);
@@ -585,51 +584,90 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   center_Y->labelsize(15);
   center_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *framesPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+10, 150, 20, "FPS ");
+  Fl_Output *framesPerSecond = new Fl_Output(10, 1*(SCREEN_Y/10)+70, 150, 20, "FPS ");
   framesPerSecond->labelsize(15);
   framesPerSecond->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *msecondsPerSecond = new Fl_Output(10, 3*(SCREEN_Y/10)+40, 150, 20, "Milliseconds per frame ");
+  Fl_Output *msecondsPerSecond = new Fl_Output(10, 1*(SCREEN_Y/10)+100, 150, 20, "Milliseconds per frame ");
   msecondsPerSecond->labelsize(15);
   msecondsPerSecond->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *ScreenSize_X = new Fl_Output(10, 3*(SCREEN_Y/10)+100, 150, 20, "px Screensize (x) ");
+  Fl_Output *trackerDisplay = new Fl_Output(10, 1*(SCREEN_Y/10)+130, 150, 20, "Chosen Tracker ");
+  trackerDisplay->labelsize(15);
+  trackerDisplay->align(FL_ALIGN_RIGHT);
+  trackerDisplay->value(ChosenTracker.c_str());
+
+  Fl_Output *errorDisplay = new Fl_Output(10, 1*(SCREEN_Y/10)+160, 150, 20, "Tracker Status ");
+  errorDisplay->labelsize(15);
+  errorDisplay->align(FL_ALIGN_RIGHT);
+
+
+  //Group with Titel "Video Information"
+  Fl_Output *videoInfo = new Fl_Output(0, 4*(SCREEN_Y/10)-10, SCREEN_X/2, 2, "Video Information");
+  videoInfo->labelsize(25);
+  videoInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
+
+  Fl_Output *ScreenSize_X = new Fl_Output(10, 4*(SCREEN_Y/10)+10, 150, 20, "px Screensize (x) ");
   ScreenSize_X->labelsize(15);
   ScreenSize_X->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *ScreenSize_Y = new Fl_Output(10, 3*(SCREEN_Y/10)+130, 150, 20, "px Screensize (y) ");
+  Fl_Output *ScreenSize_Y = new Fl_Output(10, 4*(SCREEN_Y/10)+40, 150, 20, "px Screensize (y) ");
   ScreenSize_Y->labelsize(15);
   ScreenSize_Y->align(FL_ALIGN_RIGHT);
 
-  Fl_Output *trackerDisplay = new Fl_Output(10, 3*(SCREEN_Y/10)+160, 150, 20, "Chosen Tracker ");
-  trackerDisplay->labelsize(15);
-  trackerDisplay->align(FL_ALIGN_RIGHT);
+  //Group with Titel "More Information"
+  Fl_Output *moreInfo = new Fl_Output(0, 6*(SCREEN_Y/10)-10, SCREEN_X/2, 2, "More Information");
+  moreInfo->labelsize(25);
+  moreInfo->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
 
   Fl_Output *ipDisplay = new Fl_Output(10, 6*(SCREEN_Y/10)+10, 150, 20, "Connected (IP Address) ");
   ipDisplay->labelsize(15);
   ipDisplay->align(FL_ALIGN_RIGHT);
   ipDisplay->value(serverIP);
-  
-  Fl_Output *errorDisplay = new Fl_Output(10, 6*(SCREEN_Y/10)+40, 150, 20, "Tracker Status ");
-  errorDisplay->labelsize(15);
-  errorDisplay->align(FL_ALIGN_RIGHT);
 
-  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Quit");
+  //Group with Titel "Controls"
+  Fl_Output *controls = new Fl_Output(0, 7*(SCREEN_Y/10)-10, SCREEN_X/2, 2, "Controls");
+  controls->labelsize(25);
+  controls->align(FL_ALIGN_TOP|FL_ALIGN_LEFT);
+
+  Fl_Output *message1 = new Fl_Output(10, 7*(SCREEN_Y/10)+10, 150, 20, "Start New Tracker (If there is a running tracker, you have to end it first)");
+  message1->labelsize(15);
+  message1->align(FL_ALIGN_RIGHT);
+  char charMessage1 = KEY_START;
+  const char *ptrCharMessage1 = &charMessage1;
+  message1->value(ptrCharMessage1);
+
+  Fl_Output *message2 = new Fl_Output(10, 7*(SCREEN_Y/10)+40, 150, 20, "End Current Tracker");
+  message2->labelsize(15);
+  message2->align(FL_ALIGN_RIGHT);
+  char charMessage2 = KEY_END;
+  const char *ptrCharMessage2 = &charMessage2;
+  message2->value(ptrCharMessage2);
+
+  Fl_Output *message3 = new Fl_Output(10, 7*(SCREEN_Y/10)+70, 150, 20, "Reboot Raspberry Pi/ Shut down application");
+  message3->labelsize(15);
+  message3->align(FL_ALIGN_RIGHT);
+  char charMessage3 = KEY_REBOOT;
+  const char *ptrCharMessage3 = &charMessage3;
+  message3->value(ptrCharMessage3);
+
+  Fl_Output *message4 = new Fl_Output(10, 7*(SCREEN_Y/10)+100, 150, 20, "Shut down Raspberry Pi / Shut down application");
+  message4->labelsize(15);
+  message4->align(FL_ALIGN_RIGHT);
+  char charMessage4 = KEY_SHUTDOWN;
+  const char *ptrCharMessage4 = &charMessage4;
+  message4->value(ptrCharMessage4);
+
+  Fl_Button *shutdown = new Fl_Button(0,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Shut down");
   shutdown->callback(b_SHUTDOWN,0);
 
-  Fl_Button *reboot = new Fl_Button(1*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Restart");
+  Fl_Button *reboot = new Fl_Button(1*SCREEN_X/15 + 10,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Reboot");
   reboot->callback(b_REBOOT,0);
-  
-  Fl_Button *endTracker = new Fl_Button(2*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "End Tracker (ESC-Key)");
-  endTracker->callback(b_END,0);
-  
-  Fl_Button *commitTracker = new Fl_Button(3*SCREEN_X/15,SCREEN_Y-SCREEN_Y/15, SCREEN_X/15, SCREEN_Y/15, "Start Tracker (Y-Key)");
-  commitTracker->callback(b_COMMIT,0);
 
   secondWindow->end();
   secondWindow->show(argc,argv);
 
-  thread threadObj(TrackerMain, center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP, errorDisplay);
+  thread threadObj(TrackerMain, center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, errorDisplay, serverIP);
 
   return Fl::run();
 
