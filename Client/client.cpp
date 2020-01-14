@@ -54,19 +54,24 @@ Scalar colorPurple = Scalar(114, 111, 116); //Purple
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Global Variables & Definitions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-Point LButtonDown = Point(0, 0);
-Point LButtonHold = Point(0, 0);
-bool MouseClicked = false;
+//Defines which tracker to use
 string ChosenTracker = "";
 
+//FLTK windows
 Fl_Window *firstWindow = 0;
 Fl_Window *secondWindow = 0;
 
+//Shutdown and reboot
 bool shutdownActivated = false;
 bool rebootActivated = false;
 
+//Key and mouse events
 bool escPressed = false;
 bool yPressed = false;
+bool MouseClicked = false;
+
+Point LButtonDown = Point(0, 0);
+Point LButtonHold = Point(0, 0);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining Properties
@@ -117,7 +122,13 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Function for Drawing a smoothed out Rectangle (So Camera wont wiggle)
+// Function to calculate a smoothed rectangle (Camera wont start to wiggle)
+// @frame		Image (Window) on which to draw the recatngle
+// @Point_1		Newest tracker center point
+// @Point_2		-
+// @Point_3		-
+// @Point_4		-
+// @Point_5		Oldest tracker center point
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
   double tempX;
@@ -134,137 +145,123 @@ Point SmoothFrame (Mat frame, Point Point_1, Point Point_2, Point Point_3, Point
   //Draw Rectangle (For Smooth Follow Visuals)
   rectangle(frame, Point((tempX - 50), (tempY - 50)), Point((tempX + 50), (tempY + 50)), colorGreen, 2, 8, 0);
 
-  //Return Value
   return returnValue;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Function for Calcualting a smooth follow
-////////////////////////////////////////////////////////////////////////////////////////////////////
-Point SmoothPrediction (Mat frame, Point Middle, Point Point_1, Point Point_2, Point Point_3, Point Point_4, Point Point_5) {
-  double tempX;
-  double tempY;
-  Point returnValue;
-
-  //Calculate the weighted mean
-  tempX = (((Point_1.x - Point_2.x) * 0.4) + ((Point_2.x - Point_3.x) * 0.3) + ((Point_3.x - Point_4.x) * 0.2) + ((Point_4.x - Point_5.x) * 0.1)) / 4;
-  tempY = (((Point_1.y - Point_2.y) * 0.4) + ((Point_2.y - Point_3.y) * 0.3) + ((Point_3.y - Point_4.y) * 0.2) + ((Point_4.y - Point_5.y) * 0.1)) / 4;
-
-  //Create the Point where the prediction will be
-  returnValue = Point(Point_1.x + tempX, Point_1.y + tempY);
-
-  //Draw Arrowed Line (For SMooth Follow Visuals)
-  arrowedLine(frame, Middle, returnValue, colorBlue, 2, 2, 0, 0.1);
-
-  return returnValue;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//Function for handling the whole GUI
+// Function for handling the whole GUI
+// @center_X				Pointer to GUI element which displays the tracker's center x value
+// @center_Y				Pointer to GUI element which displays the tracker's center y value
+// @framesPerSecond			Pointer to GUI element which displays the fps
+// @msecondsPerSecond		Pointer to GUI element which displays the milliseconds used for calculating one frame
+// @ScreenSize_X			Pointer to GUI element which displays the image's x size
+// @ScreenSize_Y			Pointer to GUI element which displays the image's y size
+// @trackerDisplay			Pointer to GUI element which displays which tracker is used
+// @Middle					Point (x,y) of the tracker's center
+// @FrameInfo				Point (x,y) of the size of the image
+// @PictureTime				Time consumed for one while loop, aka calulating one frame
+// @Tracker					Which tracker is used currently
+// @smoothedCenter			Point (x,y) of the tracker's smoothed out center
+// @errorDisplay			Pointer to GUI element which displays if there is an error with the tracker
+// @trackerError			True if there is an error with the tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, Point Middle, Point FrameInfo, double PictureTime, string Tracker, Point smoothedCenter, FL_Output*errorDisplay, bool trackerError) {
-  int FPS = 1000/PictureTime;
-  string errorString;
-
-  center_X->value(to_string(smoothedCenter.x).c_str());
-  center_Y->value(to_string(smoothedCenter.y).c_str());
-
-  framesPerSecond->value(to_string(FPS).c_str());
-  msecondsPerSecond->value(to_string(PictureTime).c_str());
-
-  ScreenSize_X->value(to_string(FrameInfo.x).c_str());
-  ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
+  int FPS = 1000/PictureTime;  //Frames per second for calculation of one frame
   
-	if(trackerError) {
+  //What to display if there is an error with the tracker
+  string errorString;
+  if(trackerError) {
 		errorString = "ERROR";
 	} else {
 		errorString = "SUCCESS";
 	}
-  
-  errorDisplay->value(errorString.c_str());
 
+  //Write values to GUI elements
+  center_X->value(to_string(smoothedCenter.x).c_str());
+  center_Y->value(to_string(smoothedCenter.y).c_str());
+  framesPerSecond->value(to_string(FPS).c_str());
+  msecondsPerSecond->value(to_string(PictureTime).c_str());
+  ScreenSize_X->value(to_string(FrameInfo.x).c_str());
+  ScreenSize_Y->value(to_string(FrameInfo.y).c_str());
+  errorDisplay->value(errorString.c_str());
   trackerDisplay->value(Tracker.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Main function 2
+// Main function, where all the magic happens
+// @center_X				Pointer to GUI element which displays the tracker's center x value
+// @center_Y				Pointer to GUI element which displays the tracker's center y value
+// @framesPerSecond			Pointer to GUI element which displays the fps
+// @msecondsPerSecond		Pointer to GUI element which displays the milliseconds used for calculating one frame
+// @ScreenSize_X			Pointer to GUI element which displays the image's x size
+// @ScreenSize_Y			Pointer to GUI element which displays the image's y size
+// @trackerDisplay			Pointer to GUI element which displays which tracker is used
+// @serverIP				Pointer to IP Address
+// @errorDisplay			Pointer to GUI element which displays if there is an error with the tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP, FL_Output*errorDisplay) {
+int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecond, Fl_Output*msecondsPerSecond, Fl_Output*ScreenSize_X, Fl_Output*ScreenSize_Y, Fl_Output*trackerDisplay, const char* serverIP, FL_Output*errorDisplay) {
 
-  Point prediction;
-  Point smoothedCenter;
+  Point smoothedCenter; //Point (x,y) to store the smoothed out center of tracker
+  int moveMotorX; //How fast to move motors in x direction
+  int moveMotorY; //How fast to move motors in y direction
+  int stepX; //How big the steps are for motor movement in x direction (that it is 0 movement in the center and 100% movement at border of screen)
+  int stepY; //How big the steps are for motor movement in y direction (that it is 0 movement in the center and 100% movement at border of screen)
+  int differnceToCenterX; //Difference from tracker's x center to screen's x center
+  int differnceToCenterY; //Difference from tracker's y center to screen's y center
+  bool runningMain = true; //For exiting the main while loop
+  bool running = true; //For exiting the "tracker update" while loop
+  int positionArray[2] = {0, 0}; //Holds motors movement x and y value (Used for sending over TCP)
 
-  int moveMotorX;
-  int moveMotorY;
-  int stepX;
-  int stepY;
-  int differnceToCenterX;
-  int differnceToCenterY;
+  duration<double, milli> time_span; //Timeintervall to calculate 'msecondsPerSecond' and 'fps'
+  high_resolution_clock::time_point beginTime = high_resolution_clock::now(); //Start of counter
+  high_resolution_clock::time_point endTime = high_resolution_clock::now(); //Start of counter
+  
+  Point Point_1 = Point(1, 9); //Oldest frame
+  Point Point_2 = Point(2, 8); //-
+  Point Point_3 = Point(3, 7); //-
+  Point Point_4 = Point(4, 6); //-
+  Point Point_5 = Point(5, 5); //-
+  Point Middle = Point(1,1); //Newest frame
 
-  bool running = true;
-  bool runningMain = true;
+  int socket_fd; //Socket
+  int serverPort = PORT; //Port over which connection goes
 
-  int positionArray[2] = {0, 0};
-
-  duration<double, milli> time_span;
-  high_resolution_clock::time_point beginTime = high_resolution_clock::now();
-  high_resolution_clock::time_point endTime = high_resolution_clock::now();
-
-  //Variables Initializing
-  Point Point_1 = Point(1, 9); //Newest Frame
-  Point Point_2 = Point(2, 8);
-  Point Point_3 = Point(3, 7);
-  Point Point_4 = Point(4, 6);
-  Point Point_5 = Point(5, 5);
-  Point Middle = Point(1,1);
-
-  printf("\033c"); //clear console
-
-  //
-  // Networking Setup
-  //
-  int socket_fd;
-  int serverPort;
-
-  serverPort = PORT;
-
-  struct sockaddr_in serverAddr;
-  socklen_t addrLen = sizeof(struct sockaddr_in);
-
-  //Initiate Socket
-  if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-    cout << "socket()\tERROR!" << endl;
-  }
-
-  //Specify socket propertirs (Port, IP Address)
-  serverAddr.sin_family = PF_INET;
-  serverAddr.sin_addr.s_addr = inet_addr(serverIP);
-  serverAddr.sin_port = htons(serverPort);
-
-  //Connect to socket
-  if (connect(socket_fd, (sockaddr*)&serverAddr, addrLen) < 0) {
-    cout << "connect()\tERROR!" << endl;
-  }
-
-  //
-  //OpenCV Code
-  //
-  Mat img;
+  struct sockaddr_in serverAddr; //Struct that holds IP Adress/Port/Family
+  socklen_t addrLen = sizeof(struct sockaddr_in); //Calculate size which is reserved for 'serverAddr'
+  
+    Mat img;
   img = Mat::zeros(300 , 480, CV_8UC3);
   int imgSize = img.total() * img.elemSize();
   uchar *iptr = img.data;
 
   Point FrameInfo = Point(480, 300);
-
-  namedWindow("CamTrackAI", WINDOW_NORMAL);
-
-  //set the callback function for any mouse event
+  
+   namedWindow("CamTrackAI", WINDOW_NORMAL);
+   
+    //set the callback function for any mouse event
   setMouseCallback("CamTrackAI", CallBackFunc, NULL);
-
-  Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0));
+  
+    Rect2d trackingBox = Rect2d(Point(100,100), Point(0,0));
   int ExitWhile = 0;
   int my_id = 1234;
   int my_net_id = htonl(my_id);
+
+  //Initiate Socket
+  if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+    cout << "socket()\tERROR!" << endl;
+  }
+	
+  //Fill in struct 'serverAddr'
+  serverAddr.sin_family = PF_INET; //Family
+  serverAddr.sin_addr.s_addr = inet_addr(serverIP); //IP Address
+  serverAddr.sin_port = htons(serverPort); //Port
+
+  //Connect to socket
+  if (connect(socket_fd, (sockaddr*)&serverAddr, addrLen) < 0) {
+    cout << "connect()\tERROR!" << endl;
+  }
+  
+  	bool trackerError;
 
   while (runningMain) {
 
@@ -292,7 +289,6 @@ int TrackerMain(Fl_Output*trackerInfo, Fl_Output*videoInfo, Fl_Output*center_X, 
       exit(0);
     }
 	
-	bool trackerError;
 	yPressed == false;
 
     //Choose what object to track
@@ -635,7 +631,7 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   secondWindow->end();
   secondWindow->show(argc,argv);
 
-  thread threadObj(TrackerMain, trackerInfo, videoInfo, center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP, errorDisplay);
+  thread threadObj(TrackerMain, center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, trackerDisplay, serverIP, errorDisplay);
 
   return Fl::run();
 
