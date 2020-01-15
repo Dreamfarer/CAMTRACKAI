@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // **CAMTRACKAI**
 //
-// Coded by BE3dARt with <3
+// Coded by BE3dARt (Gianluca Imbiscuso) with <3
 //
 // Visit https://github.com/BE3dARt/CamTrackAI for the documentation/ installing instructions and legal notice
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,10 +89,10 @@ Point LButtonHold = Point(0, 0);
 #define SHUTDOWN						3001
 #define REBOOT							3002
 
-#define KEY_START           113
-#define KEY_END             119
-#define KEY_REBOOT          114
-#define KEY_SHUTDOWN        102
+#define KEY_START           113	//q
+#define KEY_END             119 //w
+#define KEY_REBOOT          114 //r
+#define KEY_SHUTDOWN        102 //f
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Function which triggers when Mouse Movements or Clicks are detected (Used for selecting the Region of interest [ROI])
@@ -197,17 +197,23 @@ void GUISetting (Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSeco
   errorDisplay->value(errorString.c_str());
 }
 
-void Shutdown(int socket, int positionArray[2]) {
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Function to shut down or reboot Raspberry Pi and closing the application
+// @socket	The network socket that will be closed
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void Shutdown(int socket) {
+	int movementInstruction[2];
+	
     if (rebootActivated) {
-      positionArray[0] = REBOOT;
+      movementInstruction[0] = REBOOT;
       cout << "\n\n=====================================================================================\nRebooting Raspberry Pi ...\n=====================================================================================\n\n" << endl;
     } else {
-      positionArray[0] = SHUTDOWN; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
+      movementInstruction[0] = SHUTDOWN; //Set movement instruction to 'REBOOT'. So the Raspberry Pi will receive it and reboot.
       cout << "\n\n=====================================================================================\nShutting down Raspberry Pi ...\n=====================================================================================\n\n" << endl;
     }
-    positionArray[1] = 0; //Set the motor to 0 movement
+    movementInstruction[1] = 0; //Set the motor to 0 movement
 
-    send(socket, positionArray , 8, 0); //Send movement instruction to Raspberry Pi
+    send(socket, movementInstruction , 8, 0); //Send movement instruction to Raspberry Pi
 
     close(socket); //Close socket
 
@@ -284,6 +290,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
   //Connect to socket
   if (connect(socket_fd, (sockaddr*)&serverAddr, addrLen) < 0) {
     cout << "connect()\tERROR!" << endl;
+	exit(0);
   }
 
   while (runningMain) {
@@ -309,7 +316,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       tracker = TrackerMedianFlow::create();
     } else {
       rebootActivated = true;
-      Shutdown(socket_fd, positionArray);
+      Shutdown(socket_fd);
     }
 
     //Choose what object to track (ROI). Exits if 'y' (Key Number 121) or the button 'b_COMMIT' has been pressed.
@@ -333,7 +340,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 
       if (shutdownActivated == true || rebootActivated == true) {
         ExitWhile = KEY_START;
-        Shutdown(socket_fd, positionArray);
+        Shutdown(socket_fd);
       } else {
         send(socket_fd, positionArray , 8, 0); //Send movement instructions to motors
       }
@@ -353,7 +360,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       if (recv(socket_fd, iptr, imgSize , MSG_WAITALL) == -1) {
         cout << "recv()\tERROR!" << endl;
         rebootActivated = true;
-        Shutdown(socket_fd, positionArray);
+        Shutdown(socket_fd);
       }
 
       //The tracker searches for the object in the current frame. If it fails, it will send 0 (zero movement for motors) to the Raspberry Pi until the object is found again.
@@ -423,7 +430,7 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
       GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, Middle, FrameInfo, time_span.count(), smoothedCenter, errorDisplay, trackerError);
       // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
       if (shutdownActivated == true || rebootActivated == true) {
-        Shutdown(socket_fd, positionArray);
+        Shutdown(socket_fd);
       } else {
         send(socket_fd, positionArray , 8, 0);
       }
@@ -595,7 +602,6 @@ int SecondWindow(int argc, char **argv, const char* serverIP) {
   Fl_Output *errorDisplay = new Fl_Output(10, 1*(SCREEN_Y/10)+160, 150, 20, "Tracker Status ");
   errorDisplay->labelsize(15);
   errorDisplay->align(FL_ALIGN_RIGHT);
-
 
   //Group with Titel "Video Information"
   Fl_Output *videoInfo = new Fl_Output(0, 4*(SCREEN_Y/10)-10, SCREEN_X/2, 2, "Video Information");
