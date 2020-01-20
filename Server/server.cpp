@@ -50,16 +50,17 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Shutdown Function: When called shuts down or reboots server (Raspberry Pi)
 // @argument		Determines if function shuts down or reboots server
-// @portHandler		Pointer to the porthandler of Dynamixel
-// @packetHandler	--
+// @portHandler		Pointer to the porthandler of Dynamixel (Used for port handling)
+// @packetHandler	Pointer to the packethandler of Dynamixel (Used for protocol version handling)
 // @localSocket		Variable used to modify the local socket
 // @remoteSocket	Variable used to modify the remote socket
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket, int remoteSocket) {
 
-	close(localSocket);
-	close(remoteSocket);
+	close(localSocket); //Close local socket
+	close(remoteSocket); //Close remote socket
 	
+	//Set movement of both motors to zero (There needs to be a short break in between the calls because of the adapters speed)
 	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
 	cout << "2 seconds remaining..." << endl;
 	sleep(1);
@@ -67,8 +68,9 @@ void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::Pac
 	cout << "1 second remaining..." << endl;
 	sleep(1);
 
-	portHandler->closePort();
+	portHandler->closePort(); //Close USB port
 
+	//Shuts down or reboots server dependent on the argument pass to this function
 	if(argument == SHUTDOWN) {
 		system("shutdown -P now");
 	} else {
@@ -77,9 +79,9 @@ void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::Pac
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Main Function
-// @argc	
-// @argv	
+// Main Function: This function gets called when the program is being executed
+// @argc	How many arguments are passed to the function	
+// @argv	Char value of passed arguments
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv) {
 	//Inizializing variables and structs
@@ -169,10 +171,10 @@ int main(int argc, char** argv) {
 		//Send image to client / If there is an error, reboot server
 		if(send(remoteSocket, img.data, imgSize, 0) == -1) {
 			std::cout << "send()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
 		}
 
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]); //Write movement instructions to Dynamixel motors
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]); //Write movement instructions to one Dynamixel Motor
 
 		//Receive movement instructions for Dynamixel motors / If there is an error, reboot server
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
@@ -186,7 +188,7 @@ int main(int argc, char** argv) {
 			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server based on request of client
 		}
 
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]); //Write movement instructions to Dynamixel Motors
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]); //Write movement instructions to one Dynamixel Motor
 	}
 	
 	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server

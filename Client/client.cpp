@@ -84,6 +84,7 @@ Point LButtonHold = Point(0, 0);
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #define SCREEN_X                        1920
 #define SCREEN_Y                        1080
+#define SMALLER_STEP_RATIO				4
 
 #define PORT                            4097
 #define SHUTDOWN						3001
@@ -392,15 +393,15 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 
         //Checks if the difference from the center is + or minus 0. If it is < 0, it will send a number ranging from 0-1023 to the Raspberry Pi. If false, it will send numbers ranging from 1024-2047. This is used to define the direction.
         if(differnceToCenterX < 0) {
-          moveMotorX = abs(differnceToCenterX) * stepX;
+          moveMotorX = (abs(differnceToCenterX) * stepX)/SMALLER_STEP_RATIO;
         } else {
-          moveMotorX = (abs(differnceToCenterX) * stepX) + 1024;
+          moveMotorX = ((abs(differnceToCenterX) * stepX)/SMALLER_STEP_RATIO) + 1024;
         }
 
         if(differnceToCenterY < 0) {
-          moveMotorY = abs(differnceToCenterY) * stepY;
+          moveMotorY = (abs(differnceToCenterY) * stepY)/SMALLER_STEP_RATIO;
         } else {
-          moveMotorY = (abs(differnceToCenterY) * stepY) + 1024;
+          moveMotorY = ((abs(differnceToCenterY) * stepY)/SMALLER_STEP_RATIO) + 1024;
         }
 
         //Set movement instruction for the motors
@@ -428,7 +429,8 @@ int TrackerMain(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerSecon
 
       //Write values into the GUI
       GUISetting(center_X, center_Y, framesPerSecond, msecondsPerSecond, ScreenSize_X, ScreenSize_Y, Middle, FrameInfo, time_span.count(), smoothedCenter, errorDisplay, trackerError);
-      // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
+      
+	  // Check if user requested a reboot or shutdown of the Raspberry Pi. Else just carry on with the loop.
       if (shutdownActivated == true || rebootActivated == true) {
         Shutdown(socket_fd);
       } else {
