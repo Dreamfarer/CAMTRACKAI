@@ -95,6 +95,10 @@ int main(int argc, char** argv) {
 	struct sockaddr_in remoteAddr; //struct that stores network information for remote socket
 	int addrLen = sizeof(struct sockaddr_in); //Size of sockaddr_in struct
 
+	//Define port and protocol version for communicating with Dynamixel motors
+	dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
+	dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
+	
 	//Populating struct for socket
 	localAddr.sin_family = AF_INET;
 	localAddr.sin_addr.s_addr = INADDR_ANY;
@@ -139,10 +143,6 @@ int main(int argc, char** argv) {
 	img = Mat::zeros(RESOLUTIONHEIGHT, RESOLUTIONWIDTH, CV_8UC3); //Populate matrix with zeros
 
 	int imgSize = img.total() * img.elemSize(); //Calucalte image size for sending over TCP_IP
-
-	//Define port and protocol version for communicating with Dynamixel motors
-	dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
-	dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
 	returnValue = portHandler->openPort(); //Open port for communication with Dynamixel motors
 
