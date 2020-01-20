@@ -23,8 +23,9 @@ using namespace std;
 //Defining Properties
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Dynamixel
-#define DXL_ID_1                        1
-#define DXL_ID_2                        2
+//Switch IDs to switch Axis
+#define DXL_ID_1                        2
+#define DXL_ID_2                        1
 
 #define CW_ANGLE_LIMIT                  6
 #define CCW_ANGLE_LIMIT                 8
@@ -38,19 +39,27 @@ using namespace std;
 
 //OpenCV
 #define VIDEOSOURCE						0
+#define RESOLUTIONHEIGHT				300
+#define RESOLUTIONWIDTH					480
 
 //Networking
 #define PORT                            4097
 #define SHUTDOWN						3001
 #define REBOOT							3002
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Shutdown Function: When called shuts down or reboots server (Raspberry Pi)
+// @argument		Determines if function shuts down or reboots server
+// @portHandler		Pointer to the porthandler of Dynamixel
+// @packetHandler	--
+// @localSocket		Variable used to modify the local socket
+// @remoteSocket	Variable used to modify the remote socket
+////////////////////////////////////////////////////////////////////////////////////////////////////
 void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket, int remoteSocket) {
 
 	close(localSocket);
 	close(remoteSocket);
 	
-	cout << "3 seconds remaining..." << endl;
-	sleep(1);
 	packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, 0);
 	cout << "2 seconds remaining..." << endl;
 	sleep(1);
@@ -68,30 +77,30 @@ void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::Pac
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-//Main Function
+// Main Function
+// @argc	
+// @argv	
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void TCPServer () {
+int main(int argc, char** argv) {
 	//Inizializing variables and structs
-	int returnValue;
-	int localSocket;
-	int remoteSocket;
-	bool status = true;
-	int positionArray[2];
-	Mat img;
-	Mat flippedFrame;
-	struct sockaddr_in localAddr;
-	struct sockaddr_in remoteAddr;
-	int addrLen = sizeof(struct sockaddr_in);
+	int returnValue; //Stores return values of Dynamixel functions
+	int localSocket; //Local socket
+	int remoteSocket; //Remote socket
+	bool status = true; //Used to run while loops until status turns false
+	int positionArray[2]; //Array that stores motor instructions received by client
+	Mat img; //OpenCV image that will get sent to client
+	struct sockaddr_in localAddr; //struct that stores network information for local socket
+	struct sockaddr_in remoteAddr; //struct that stores network information for remote socket
+	int addrLen = sizeof(struct sockaddr_in); //Size of sockaddr_in struct
 
 	//Populating struct for socket
 	localAddr.sin_family = AF_INET;
 	localAddr.sin_addr.s_addr = INADDR_ANY;
 	localAddr.sin_port = htons(PORT);
 
-	//Set video device
-	VideoCapture cap(VIDEOSOURCE);
+	VideoCapture cap(VIDEOSOURCE); //Set video device
 
-	//Setup/ prepare socket and check if it an error occurs.
+	//Setup / prepare socket and check if it an error occurs.
 	if ((localSocket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
 		cout << "socket()\tERROR!" << endl;
 		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
@@ -103,8 +112,7 @@ void TCPServer () {
 		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
-	// Listening for an incoming connection
-	listen(localSocket , 3);
+	listen(localSocket , 3); // Listening for an incoming connection
 
 	//Loop through function until a client connects to the socket
 	while(status){
@@ -123,28 +131,20 @@ void TCPServer () {
 	}
 
 	//Adjust the resolution of capture device
-	cap.set(CAP_PROP_FRAME_WIDTH, 480);
-	cap.set(CAP_PROP_FRAME_HEIGHT, 300);
+	cap.set(CAP_PROP_FRAME_WIDTH, RESOLUTIONWIDTH);
+	cap.set(CAP_PROP_FRAME_HEIGHT, RESOLUTIONHEIGHT);
 
-	//Get resolution of capturing device
-	int height = cap.get(CAP_PROP_FRAME_HEIGHT);
-	int width = cap.get(CAP_PROP_FRAME_WIDTH);
+	img = Mat::zeros(RESOLUTIONHEIGHT, RESOLUTIONWIDTH, CV_8UC3); //Populate matrix with zeros
 
-	//Populate matrix with 0
-	img = Mat::zeros(height, width, CV_8UC3);
-
-	//Calucalte image size for sending over TCP_IP
-	int imgSize = img.total() * img.elemSize();
+	int imgSize = img.total() * img.elemSize(); //Calucalte image size for sending over TCP_IP
 
 	//Define port and protocol version for communicating with Dynamixel motors
 	dynamixel::PortHandler *portHandler = dynamixel::PortHandler::getPortHandler(DEVICENAME);
 	dynamixel::PacketHandler *packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
 
-	//Open port
-	returnValue = portHandler->openPort();
+	returnValue = portHandler->openPort(); //Open port for communication with Dynamixel motors
 
-	//Set port baudrate
-	returnValue = portHandler->setBaudRate(BAUDRATE);
+	returnValue = portHandler->setBaudRate(BAUDRATE); //Set port baudrate (Communication rate)
 
 	//Enable torque
 	returnValue = packetHandler->write1ByteTxOnly(portHandler, DXL_ID_1, TORQUE, 1);
@@ -154,53 +154,42 @@ void TCPServer () {
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, TORQUE_LIMIT, 1023);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, TORQUE_LIMIT, 1023);
 
-	//CW angle limit (Used to set motors to wheel mode)
+	//CW angle limit (Used to set motors from joint mode to wheel mode)
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CW_ANGLE_LIMIT, 0);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CW_ANGLE_LIMIT, 0);
 
-	//CCW angle limit (Used to set motors to wheel mode)
+	//CCW angle limit (Used to set motors from joint mode to wheel mode)
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, CCW_ANGLE_LIMIT, 0);
 	returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, CCW_ANGLE_LIMIT, 0);
 
 	status = true;
 	while(status){
-		// get a frame from the camera
-		cap >> img;
-		// flip the frame
-		flip(img, flippedFrame, 1);
+		cap >> img; //Get a frame from the camera
 
-		// send the flipped frame over the network
-		std::cout << "Server send" << std::endl;
-		if(send(remoteSocket, flippedFrame.data, imgSize, 0) == -1) {
+		//Send image to client / If there is an error, reboot server
+		if(send(remoteSocket, img.data, imgSize, 0) == -1) {
 			std::cout << "send()\tERROR!" << std::endl;
 			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 		}
 
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]);
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]); //Write movement instructions to Dynamixel motors
 
-		//Receive motor parameters
+		//Receive movement instructions for Dynamixel motors / If there is an error, reboot server
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
 			std::cout << "Recv()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
-		} else {
-			std::cout << "Server receive: x:" << positionArray[0] << "y:" << positionArray[1] << std::endl;
-		}
-
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
+		} 
+		
+		//Shut down or reboot server if requested by client
 		if(positionArray[0] == SHUTDOWN || positionArray[0] == REBOOT) {
-			status = false;
-			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket);
+			status = false; //Exit loop
+			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server based on request of client
 		}
 
-		//Write bytes to Dynamixel Motors
-		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]);
+		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]); //Write movement instructions to Dynamixel Motors
 	}
+	
+	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
 
-	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
-
-	return;
-}
-
-int main(int argc, char** argv)
-{
-	TCPServer();
+	return 0;
 }
