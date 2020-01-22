@@ -56,7 +56,7 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // shutDownFunc Function: When called shuts down or reboots server (Raspberry Pi)
-// @argument				Determines if function shuts down or reboots server (Raspberry Pi)
+// @argument			Determines if function shuts down or reboots server (Raspberry Pi)
 // @portHandler			Pointer to the porthandler of Dynamixel (Used for port handling)
 // @packetHandler		Pointer to the packethandler of Dynamixel (Used for protocol version handling)
 // @localSocket			Variable used to modify the local socket

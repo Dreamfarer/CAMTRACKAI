@@ -144,7 +144,7 @@ void callBackFunc(int event, int x, int y, int flags, void * userData) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // smoothFrameFunc Function: Used to calculate a smoothed rectangle (So camera will not start to wiggle)
-// @frame     Image (Window) on which to draw the recatngle
+// @frame     	Image (Window) on which to draw the recatngle
 // @point_1		Newest tracker center point
 // @point_2		-
 // @point_3		-
@@ -171,11 +171,11 @@ Point smoothFrameFunc(Mat frame, Point point_1, Point point_2, Point point_3, Po
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // guiHandlerFunc Function: Updates all GUI values
-// @center_X				    Pointer to GUI element which displays the tracker's center x value
-// @center_Y				    Pointer to GUI element which displays the tracker's center y value
-// @framesPerSecond			Pointer to GUI element which displays the fps
-// @msecondsPerSecond		Pointer to GUI element which displays the milliseconds used for calculating one frame
-// @screenSize_X			  Pointer to GUI element which displays the image's x size
+// @center_X			Pointer to GUI element which displays the tracker's center x value
+// @center_Y			Pointer to GUI element which displays the tracker's center y value
+// @framesPerSecond		Pointer to GUI element which displays the fps
+// @msecondsPerSecond	Pointer to GUI element which displays the milliseconds used for calculating one frame
+// @screenSize_X		Pointer to GUI element which displays the image's x size
 // @screenSize_Y        Pointer to GUI element which displays the image's y size
 // @middle              Point (x,y) of the tracker's center
 // @frameInfo           Point (x,y) of the size of the image
@@ -207,7 +207,7 @@ void guiHandlerFunc(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerS
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // shutDownFunc Function: Used to shot down or reboot server (Raspberry Pi)
-// @socket	The network socket that will be closed
+// @socket		The network socket that will be closed
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void shutDownFunc(int socket) {
   int movementInstruction[2];
@@ -230,13 +230,13 @@ void shutDownFunc(int socket) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // trackerMainFunc: Basically the main function. Everything will be called, calculated and executed from here.
-// @center_X				    Pointer to GUI element which displays the tracker's center x value
-// @center_Y				    Pointer to GUI element which displays the tracker's center y value
-// @framesPerSecond			Pointer to GUI element which displays the fps
-// @msecondsPerSecond		Pointer to GUI element which displays the milliseconds used for calculating one frame
+// @center_X		 	Pointer to GUI element which displays the tracker's center x value
+// @center_Y			Pointer to GUI element which displays the tracker's center y value
+// @framesPerSecond		Pointer to GUI element which displays the fps
+// @msecondsPerSecond	Pointer to GUI element which displays the milliseconds used for calculating one frame
 // @screenSize_X        Pointer to GUI element which displays the image's x size
 // @screenSize_Y        Pointer to GUI element which displays the image's y size
-// @trackerDisplay			Pointer to GUI element which displays which tracker is used
+// @trackerDisplay		Pointer to GUI element which displays which tracker is used
 // @serverIP            Pointer to IP Address
 // @errorDisplay        Pointer to GUI element which displays if there is an error with the tracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,8 +460,8 @@ int trackerMainFunc(Fl_Output*center_X, Fl_Output*center_Y, Fl_Output*framesPerS
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Buttons for the GUI
 // @FL_Widget	  Target widget
-// @*			      Data that can be stored in a Widget with fltk::Widget::user_data(void*)
-// --> 			    Description taken from https://www.fltk.org/doc-2.0/html/group__example2.html
+// @*			  Data that can be stored in a Widget with fltk::Widget::user_data(void*)
+// --> 			  Description taken from https://www.fltk.org/doc-2.0/html/group__example2.html
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Choose KCF
 void b_KCF(Fl_Widget *, void *) {
@@ -578,8 +578,8 @@ int firstWindowFunc(int argc, char **argv) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // secondWindowFunc Function: Used to display the second window and start the actual tracking process
-// @argc		    How many arguments are passed to the function
-// @argv		    Char value of passed arguments
+// @argc		How many arguments are passed to the function
+// @argv		Char value of passed arguments
 // @serverIP    IP of server (Raspberry Pi)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 int secondWindowFunc(int argc, char **argv, const char* serverIP) {
