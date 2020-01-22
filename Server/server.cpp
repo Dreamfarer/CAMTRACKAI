@@ -55,14 +55,14 @@ using namespace std;
 #define REBOOT							3002
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Shutdown Function: When called shuts down or reboots server (Raspberry Pi)
+// shutDownFunc Function: When called shuts down or reboots server (Raspberry Pi)
 // @argument		Determines if function shuts down or reboots server (Raspberry Pi)
 // @portHandler		Pointer to the porthandler of Dynamixel (Used for port handling)
 // @packetHandler	Pointer to the packethandler of Dynamixel (Used for protocol version handling)
 // @localSocket		Variable used to modify the local socket
 // @remoteSocket	Variable used to modify the remote socket
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket, int remoteSocket) {
+void shutDownFunc(int argument, dynamixel::PortHandler *portHandler, dynamixel::PacketHandler *packetHandler, int localSocket, int remoteSocket) {
 
 	close(localSocket); //Close local socket
 	close(remoteSocket); //Close remote socket
@@ -116,13 +116,13 @@ int main(int argc, char** argv) {
 	//Setup / prepare socket and check if it an error occurs.
 	if ((localSocket = socket(AF_INET , SOCK_STREAM , 0)) < 0){
 		cout << "socket()\tERROR!" << endl;
-		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+		shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	//Bind struct with socket and check if an error occurs.
 	if (bind(localSocket,(struct sockaddr *)&localAddr , sizeof(localAddr)) < 0) {
 		cout << "bind()\tERROR!" << endl;
-		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+		shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	listen(localSocket , 3); // Listening for an incoming connection
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
 	while(status){
 		if ((remoteSocket = accept(localSocket, (struct sockaddr *)&remoteAddr, (socklen_t*)&addrLen)) < 0) {
 			cout << "accept()\tERROR" << endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+			shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 		} else {
 			status = false;
 		}
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 	//Check if the capturing devics is up
 	if (cap.isOpened() == false) {
 		cout << "Opening capturing device\tERROR!" << endl;
-		Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
+		shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket);
 	}
 
 	//Adjust the resolution of capture device
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
 		//Send image to client / If there is an error, reboot server (Raspberry Pi)
 		if(send(remoteSocket, img.data, imgSize, 0) == -1) {
 			std::cout << "send()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
+			shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 		}
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]); //Write movement instructions to one Dynamixel Motor
@@ -186,19 +186,19 @@ int main(int argc, char** argv) {
 		//Receive movement instructions for Dynamixel motors / If there is an error, reboot server (Raspberry Pi)
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
 			std::cout << "Recv()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
+			shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 		} 
 		
 		//Shut down or reboot server (Raspberry Pi) if requested by client
 		if(positionArray[0] == SHUTDOWN || positionArray[0] == REBOOT) {
 			status = false; //Exit loop
-			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server (Raspberry Pi) based on request of client
+			shutDownFunc(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server (Raspberry Pi) based on request of client
 		}
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]); //Write movement instructions to one Dynamixel Motor
 	}
 	
-	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
+	shutDownFunc(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 
 	return 0;
 }
