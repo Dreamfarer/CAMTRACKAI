@@ -1,4 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// **CAMTRACKAI**
+//
+// Coded by BE3dARt (Gianluca Imbiscuso) with <3
+//
+// Visit https://github.com/BE3dARt/CamTrackAI for the documentation/ installing instructions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 //Include header files
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "opencv2/opencv.hpp"
@@ -15,7 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Defining namespaces
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
 using namespace cv;
 using namespace std;
 
@@ -23,19 +30,19 @@ using namespace std;
 //Defining Properties
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //Dynamixel
-//Switch IDs to switch Axis
-#define DXL_ID_1                        2
-#define DXL_ID_2                        1
-
+//--Byte positions in array (May differ from motor to motor)
 #define CW_ANGLE_LIMIT                  6
 #define CCW_ANGLE_LIMIT                 8
 #define MOVING_SPEED                    32
 #define TORQUE                          24
 #define TORQUE_LIMIT                    34
 
+//--Values
 #define PROTOCOL_VERSION                1.0
 #define BAUDRATE                        57600
 #define DEVICENAME                      "/dev/ttyUSB0"
+#define DXL_ID_1                        2 //ID of first motor
+#define DXL_ID_2                        1 //ID of second motor
 
 //OpenCV
 #define VIDEOSOURCE						0
@@ -49,7 +56,7 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Shutdown Function: When called shuts down or reboots server (Raspberry Pi)
-// @argument		Determines if function shuts down or reboots server
+// @argument		Determines if function shuts down or reboots server (Raspberry Pi)
 // @portHandler		Pointer to the porthandler of Dynamixel (Used for port handling)
 // @packetHandler	Pointer to the packethandler of Dynamixel (Used for protocol version handling)
 // @localSocket		Variable used to modify the local socket
@@ -70,7 +77,7 @@ void Shutdown (int argument, dynamixel::PortHandler *portHandler, dynamixel::Pac
 
 	portHandler->closePort(); //Close USB port
 
-	//Shuts down or reboots server dependent on the argument pass to this function
+	//Shuts down or reboots server (Raspberry Pi) dependent on the argument pass to this function
 	if(argument == SHUTDOWN) {
 		system("shutdown -P now");
 	} else {
@@ -168,30 +175,30 @@ int main(int argc, char** argv) {
 	while(status){
 		cap >> img; //Get a frame from the camera
 
-		//Send image to client / If there is an error, reboot server
+		//Send image to client / If there is an error, reboot server (Raspberry Pi)
 		if(send(remoteSocket, img.data, imgSize, 0) == -1) {
 			std::cout << "send()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 		}
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_1, MOVING_SPEED, positionArray[0]); //Write movement instructions to one Dynamixel Motor
 
-		//Receive movement instructions for Dynamixel motors / If there is an error, reboot server
+		//Receive movement instructions for Dynamixel motors / If there is an error, reboot server (Raspberry Pi)
 		if(recv(remoteSocket, positionArray, 8, 0) == -1) {
 			std::cout << "Recv()\tERROR!" << std::endl;
-			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
+			Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 		} 
 		
-		//Shut down or reboot server if requested by client
+		//Shut down or reboot server (Raspberry Pi) if requested by client
 		if(positionArray[0] == SHUTDOWN || positionArray[0] == REBOOT) {
 			status = false; //Exit loop
-			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server based on request of client
+			Shutdown(positionArray[0], portHandler, packetHandler, localSocket, remoteSocket); //Shut down or reboot server (Raspberry Pi) based on request of client
 		}
 
 		returnValue = packetHandler->write2ByteTxOnly(portHandler, DXL_ID_2, MOVING_SPEED, positionArray[1]); //Write movement instructions to one Dynamixel Motor
 	}
 	
-	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server
+	Shutdown(REBOOT, portHandler, packetHandler, localSocket, remoteSocket); //Reboot server (Raspberry Pi)
 
 	return 0;
 }
