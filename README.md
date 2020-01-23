@@ -8,10 +8,10 @@ It uses the TCP/IP to send a video source from the Raspberry Pi to a more powerf
 
 You will need these following utilities/devices:
 
-* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robotis Dynamixel motor. They are used to turn the camera.
-* [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the motors.
+* [Dynamixel Rx-64](http://www.robotis.us/dynamixel-rx-64-hn05-n101/) (x2) - These are the motors we used. But you can use any Robotis Dynamixel motor.
+* [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the Dynamixel motors.
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
-* [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used. But you can use any computer with any Linux distro.
+* [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used as server. But you can use any computer with any Linux distro.
 
 You will need the following libraries/packages to compile this code:
 
@@ -151,7 +151,3 @@ find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 ## Thanks to
 
 Linus Torvalds for creating the best kernel, the guys over Parrot OS for the best Linux distro, the whole stackoverflow community for providing ideas and saving programmers' lives.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
