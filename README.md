@@ -48,7 +48,7 @@ sudo make install
 
 ### Dynamixel SDK installation
 
-We need to load the appropriate Dynamixel library. In the makefile, search for:
+We need to load the appropriate Dynamixel library. In the server's makefile, search for:
 
 ```
 dxl_sbc_cpp
@@ -63,7 +63,7 @@ dxl_x64_cpp
 Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
 
 ```
-cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux_sbc
+cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux64
 make
 sudo make install
 ```
@@ -75,13 +75,13 @@ sudo apt-get install avahi-daemon
 
 ### Change path
 
-Open the makefile and find this variable:
+Open both makefiles and find this variable:
 
 ```
 CAMTRACKAI_PATH = /home/theb3arybear/Desktop/CamTrackAI/GitHub/CamTrackAI
 ```
 
-Change it to your location.
+Change the path to your location.
 
 ```
 CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
@@ -89,22 +89,22 @@ CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
 
 ### Change motor ID
 
-Navigate to CamTrackAI.cpp and find this line:
+Navigate to in CamTrackAIServer.cpp in Server and find these line:
 
 ```
 #define DXL_ID_1        1
 #define DXL_ID_2        2
 ```
 
-Change the ID of the motors to match yours. Look it up how to change IDs of motors on the internet if you encounter problems.
+Change the ID of the motors to match yours. 
 
 ```
-#define DXL_ID X
+#define DXL_ID          X
 ```
 
 ### Change resolution
 
-Navigate to CamTrackAI.cpp and find these lines:
+Navigate to CamTrackAIClient.cpp in Client and find these lines:
 
 ```
 #define SCREEN_X        1920
@@ -112,6 +112,14 @@ Navigate to CamTrackAI.cpp and find these lines:
 ```
 
 Change them to match your monitor. You can run 'xdpyinfo | grep dimensions' if you need to know them.
+
+### Networking Setup
+
+Because this application uses mDNS, you can set up your network how would like it to be. The easiest setup would be connecting the server and the client with an ethernet cable. It is important to match the subnet mask and the IP addresses of both computers. To change the IP address and the subnet mask, type the following to the command line (This is an example, you can choose the addresses freely):
+
+```
+sudo ifconfig eth0 192.168.1.1 netmask 255.255.255.0
+```
 
 ## Compile and Run
 
