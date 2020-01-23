@@ -156,8 +156,8 @@ $find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 ## Authors
 
 * **BE3dARt (Gianluca Imbiscuso)** - *Project Planning/Coding/GitHub/Documentation* - [BE3dARt.ch](https://be3dart.ch/)
-* **Kay** - *Project Planning/Planning and building of construction*
-* **Luca** - *Project Planning*
+* **Kay** - *Project Planning/Planning and building of construction/Documentation*
+* **Luca** - *Project Planning/Documentation*
 
 * **Jeremy Morgan** - *Provided code for reading output of a console command (getStdoutFromCommandFunc function in client.cpp)* - [Found Here](https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/)
 * **Steve Tuenkam** - *Provided idea behind sending video over TCP/IP using OpenCV* - [Found Here](https://gist.github.com/Tryptich/2a15909e384b582c51b5)
