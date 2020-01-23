@@ -121,10 +121,15 @@ Open the console and move to the makefile's location. First:
 make
 ```
 
-Then run the application with:
+Run the following command (on Raspberry Pi) to start the server:
 
 ```
-./CamTrackAI
+./CamTrackAIServer
+```
+Then run the next command (on external Computer) to start the client:
+
+```
+./CamTrackAICLient
 ```
 
 ## Further information
