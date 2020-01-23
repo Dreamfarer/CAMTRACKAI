@@ -12,12 +12,13 @@ You will need these following utilities/devices:
 * [Robotis USB2Dynamixel Adapter](https://www.trossenrobotics.com/robotis-bioloid-usb2dynamixel.aspx) - It is used to communicate with the Dynamixel motors.
 * [Raspberry Pi Camera Module](https://projects.raspberrypi.org/en/projects/getting-started-with-picamera) - Our camera, the Pi Cam. But any webcam will work fine.
 * [Raspberry Pi 4 Model B](https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/) - The computer we used as server. But you can use any computer with any Linux distro.
+* [Gens Ace 5000mah 14.8V](https://www.gensace.de/gens-ace-5000mah-14-8v-45c-4s1p-flat-lipo-battery.html) - You will need a 4S1P Battery to power the motors. Additionally add a 3A step down to 5V to power the Raspberry Pi.
 
 You will need the following libraries/packages to compile this code:
 
 * [OpenCV](https://opencv.org/releases/) (Not included, installing instructions further down) - For the tracking algorithm
 * [Dynamixel SDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) (Necessary parts included) - For controlling the Dynamxiel motors
-* [FLTK](https://www.fltk.org/software.php) (Necessary parts included) - For the GUI
+* [FLTK](https://www.fltk.org/software.php) (Not included, installing instructions further down) - GUI
 * [Avahi-Daemon](https://linux.die.net/man/8/avahi-daemon) (Not included, installing instructions further down) - Used for mDNS to resolve an IP address by a hostname.
 
 
@@ -25,7 +26,7 @@ You will need the following libraries/packages to compile this code:
 
 ### OpenCV installation
 
-Follow the tutorial found [here](https://linuxize.com/post/how-to-install-opencv-on-ubuntu-18-04/). There are two ways presented to install OpenCV. Choose the second way further down.
+Follow the tutorial found [here](https://linuxize.com/post/how-to-install-opencv-on-ubuntu-18-04/). There are two ways presented to install OpenCV. Choose the second way found further down.
 
 After you finished the setup, type a final command into the console.
 
@@ -91,8 +92,8 @@ CAMTRACKAI_PATH = /YOUR/PATH/TO/CAMTRACKAI
 Navigate to CamTrackAI.cpp and find this line:
 
 ```
-#define DXL_ID_1
-#define DXL_ID_2
+#define DXL_ID_1        1
+#define DXL_ID_2        2
 ```
 
 Change the ID of the motors to match yours. Look it up how to change IDs of motors on the internet if you encounter problems.
@@ -106,8 +107,8 @@ Change the ID of the motors to match yours. Look it up how to change IDs of moto
 Navigate to CamTrackAI.cpp and find these lines:
 
 ```
-#define SCREEN_X                        1920
-#define SCREEN_Y                        1080
+#define SCREEN_X        1920
+#define SCREEN_Y        1080
 ```
 
 Change them to match your monitor. You can run 'xdpyinfo | grep dimensions' if you need to know them.
@@ -145,7 +146,7 @@ find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 * **Kay** - *Project Planning/Planning and building of construction*
 * **Luca** - *Project Planning*
 
-* **Jeremy Morgan** - *Provided code for reading output of a console command (GetStdoutFromCommand function in client.cpp)* - [Found Here](https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/)
+* **Jeremy Morgan** - *Provided code for reading output of a console command (getStdoutFromCommandFunc function in client.cpp)* - [Found Here](https://www.jeremymorgan.com/tutorials/c-programming/how-to-capture-the-output-of-a-linux-command-in-c/)
 * **Steve Tuenkam** - *Provided idea behind sending video over TCP/IP using OpenCV* - [Found Here](https://gist.github.com/Tryptich/2a15909e384b582c51b5)
 
 ## Thanks to
