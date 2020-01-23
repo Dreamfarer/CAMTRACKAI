@@ -31,7 +31,7 @@ Follow the tutorial found [here](https://linuxize.com/post/how-to-install-opencv
 After you finished the setup, type a final command into the console.
 
 ```
-sudo apt-get install libopencv-dev
+$sudo apt-get install libopencv-dev
 ```
 
 ### FLTK (The Fast Light Tool Kit ) installation
@@ -41,9 +41,9 @@ Follow these steps to a successful installation of FLTK. The complete tutorial i
 Firstly, you will need to download FLTK and extract it. Then follow these steps:
 
 ```
-./configure
-make
-sudo make install
+$./configure
+$make
+$sudo make install
 ```
 
 ### Dynamixel SDK installation
@@ -63,14 +63,14 @@ dxl_x64_cpp
 Note that the suffix '.so' and the prefix 'lib' are missing. Also note that you have to install the library. You can do this by the following:
 
 ```
-cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux64
-make
+$cd /YOUR/PATH/TO/CAMTRACKAI/DynamixelSDK/build/linux64
+$make
 sudo make install
 ```
 ### Avahi Daemon installation
 
 ```
-sudo apt-get install avahi-daemon
+$sudo apt-get install avahi-daemon
 ```
 
 ### Change path
@@ -118,7 +118,7 @@ Change them to match your monitor. You can run 'xdpyinfo | grep dimensions' if y
 Because this application uses mDNS, you can set up your network how would like it to be. The easiest setup would be connecting the server and the client with an ethernet cable. It is important to match the subnet mask and the IP addresses of both computers. To change the IP address and the subnet mask, type the following to the command line (This is an example, you can choose the addresses freely):
 
 ```
-sudo ifconfig eth0 192.168.1.1 netmask 255.255.255.0
+$sudo ifconfig eth0 192.168.1.1 netmask 255.255.255.0
 ```
 
 ## Compile and Run
@@ -126,18 +126,18 @@ sudo ifconfig eth0 192.168.1.1 netmask 255.255.255.0
 Open the console and move to the makefile's location. First:
 
 ```
-make
+$make
 ```
 
 Run the following command (on Raspberry Pi) to start the server:
 
 ```
-./CamTrackAIServer
+$./CamTrackAIServer
 ```
 Then run the next command (on external Computer) to start the client:
 
 ```
-./CamTrackAICLient
+$./CamTrackAICLient
 ```
 
 ## Further information
@@ -145,7 +145,7 @@ Then run the next command (on external Computer) to start the client:
 To completely remove OpenCV, type the following line into console:
 
 ```
-find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
+$find . -type d -name "*opencv*" -prune -exec rm -rf {} \;
 ```
 
 ## Known Issues (Unsolved)
